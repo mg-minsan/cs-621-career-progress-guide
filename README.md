@@ -325,7 +325,9 @@ absence of fabricated claims.
 ## Verification
 
 ```sh
-.venv/bin/python -m unittest discover -s tests -v
+.venv/bin/python run_tests.py        # full suite
+.venv/bin/python run_tests.py --smoke  # + end-to-end smoke test
+.venv/bin/python -m unittest discover -s tests -v  # equivalent, verbose
 ```
 
 Tests build small fixture workbooks in a temporary directory. They exercise
