@@ -21,7 +21,18 @@ Recommendations must distinguish source facts from inferred matches. The system 
 - Built retrieval-ready role, course and skill-proficiency text.
 - Added role tasks and skill requirements to role search text.
 - Generated a quality report and passed eight integrity checks and six fixture tests.
-- Created a combined Software Engineer JSON and Markdown example.
+- Exported JSON and Markdown profiles for all 2,030 roles, including the
+  Software Engineer profile and all 29 roles without recorded requirements.
+- Added an export manifest with canonical IDs, relative paths, output/source
+  hashes, counts and missing-data flags; verified full task/requirement coverage.
+- Implemented read-only structured lookup and role comparisons in `lookup.py`,
+  including explicit title ambiguity, source references and missing-data flags.
+- Verified Software Engineer lookup returns all 27 requirements; lookup tests
+  cover complete lists, ambiguity, provenance, missing records and read-only access.
+- Created a small, reviewed evaluation fixture set (exact lookup, role
+  ambiguity, interest-based role discovery, course relevance, evidence versus
+  proficiency expectations, missing data and citation accuracy) with a
+  retrieval-metric harness and a recommendation-quality checker.
 
 ### Verified outputs
 
@@ -31,14 +42,21 @@ Recommendations must distinguish source facts from inferred matches. The system 
 | Quality report | `data/career-ingested.quality.json` |
 | Ingestion implementation | `ingest.py`, `sql/build_core.sql` |
 | Ingestion tests | `tests/test_ingest.py` |
-| Software Engineer profile | `data/software-engineer-combined.json`, `data/software-engineer-combined.md` |
+| Read-only structured lookup | `lookup.py` |
+| Lookup tests | `tests/test_lookup.py` |
+| Role exporter | `export_roles.py` |
+| Export tests | `tests/test_export_roles.py` |
+| All-role export manifest | `data/role-profiles/manifest.json` |
+| Role JSON/Markdown profiles | `data/role-profiles/roles/<role_id>.json`, `.md` |
+| Evaluation fixtures | `eval_fixtures.py` |
+| Evaluation harness | `evaluate.py` |
+| Evaluation tests | `tests/test_eval_fixtures.py`, `tests/test_evaluate.py` |
 
 The pre-existing `data/career.duckdb` was not overwritten. Subsequent tools should accept an explicit database path and use the fresh database by default.
 
 ### Not yet implemented
 
-- Lookup APIs or agent tools.
-- All-role JSON/Markdown exports.
+- Agent tools (the Python structured lookup API is implemented).
 - Keyword or embedding indexes.
 - User profile assessment.
 - Validated course-to-skill associations.
@@ -290,14 +308,18 @@ Maintain a small, reviewed test set covering:
 - Missing data, multiple mappings and duplicate source records.
 - Citation accuracy and unsupported claims.
 
-Measure retrieval relevance separately from recommendation quality. Review outputs with realistic profiles before expanding automation.
+Measure retrieval relevance separately from recommendation quality. Review outputs with realistic profiles before expanding automation. The reviewed set and harness are implemented in `eval_fixtures.py` and `evaluate.py`; keyword and semantic retrieval score against `retrieval_cases`, while the recommendation agent is checked against `recommendation_scenarios`.
 
 ## Immediate next step
 
-Implement **Phase 1: structured lookup and role exports** against `data/career-ingested.duckdb`, with tests. Then establish keyword search and a small end-to-end example before investing in embeddings or a full agent.
+Phase 1 lookup and role exports are implemented, along with the reviewed
+evaluation fixtures and metric harness. Next is the role/course keyword search
+baseline, then a small end-to-end example before investing in embeddings or a
+full agent.
 
 ## Related documents
 
 - [Ingestion README](../README.md)
 - [Lookup and semantic search](lookup-and-semantic-search.md)
-- [Software Engineer example](../data/software-engineer-combined.md)
+- [Software Engineer profile](../data/role-profiles/roles/5ad023c4773fd21abc6e010292d435b76a4bca2189f3ad254ff39d836510c314.md)
+- [Role export manifest](../data/role-profiles/manifest.json)
