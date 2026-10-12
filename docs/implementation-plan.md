@@ -33,6 +33,9 @@ Recommendations must distinguish source facts from inferred matches. The system 
   ambiguity, interest-based role discovery, course relevance, evidence versus
   proficiency expectations, missing data and citation accuracy) with a
   retrieval-metric harness and a recommendation-quality checker.
+- Implemented the role and course keyword search baseline in `search.py` using
+  BM25 over retrieval-ready text, with exact identifiers preferred over ranking
+  and sector/track filters for roles; results carry entity IDs and evidence.
 
 ### Verified outputs
 
@@ -51,13 +54,15 @@ Recommendations must distinguish source facts from inferred matches. The system 
 | Evaluation fixtures | `eval_fixtures.py` |
 | Evaluation harness | `evaluate.py` |
 | Evaluation tests | `tests/test_eval_fixtures.py`, `tests/test_evaluate.py` |
+| Keyword search | `search.py` |
+| Search tests | `tests/test_search.py` |
 
 The pre-existing `data/career.duckdb` was not overwritten. Subsequent tools should accept an explicit database path and use the fresh database by default.
 
 ### Not yet implemented
 
 - Agent tools (the Python structured lookup API is implemented).
-- Keyword or embedding indexes.
+- Embedding indexes and semantic retrieval.
 - User profile assessment.
 - Validated course-to-skill associations.
 - Recommendation agent or generated career guides.
@@ -312,10 +317,10 @@ Measure retrieval relevance separately from recommendation quality. Review outpu
 
 ## Immediate next step
 
-Phase 1 lookup and role exports are implemented, along with the reviewed
-evaluation fixtures and metric harness. Next is the role/course keyword search
-baseline, then a small end-to-end example before investing in embeddings or a
-full agent.
+Phase 1 lookup and role exports, the reviewed evaluation fixtures and the
+role/course keyword search baseline are implemented. Next is the user profile
+schema and semantic retrieval, then a small end-to-end example before
+investing in embeddings or a full agent.
 
 ## Related documents
 

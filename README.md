@@ -187,6 +187,32 @@ raise DuckDB errors. All queries use bound input parameters and the connection
 is opened read-only and closed when the context exits. Close readers before
 rebuilding the database.
 
+## Keyword search
+
+`search.py` provides `KeywordSearch`, a read-only BM25 keyword search over the
+retrieval-ready `core.search_documents` text: role descriptions, tasks and
+required skills for roles; titles, descriptions and learning outcomes for
+courses. Exact identifiers are preferred over ranking — an exact role ID or
+title, or an exact course reference number or title, short-circuits the search.
+
+```python
+from search import KeywordSearch
+
+with KeywordSearch() as search:
+    roles = search.search("software testing", "role",
+                          sector="Infocomm Technology", limit=10)
+    courses = search.search("forklift", "course", limit=10)
+    course_ids = search.rank("forklift", "course")  # ids only, for evaluation
+```
+
+`search(...)` returns a status envelope whose `results` list carries each
+entity's canonical ID, BM25 score, matched query terms and per-section evidence
+snippets. Exact matches are flagged `exact` and come first. `rank(...)` returns
+just the ranked canonical IDs, matching the `retrieve` contract used by
+`evaluate.evaluate_retrieval`. Fetch complete facts and source records with
+`CareerLookup` (`get_role` / `get_course`) rather than parsing the snippets.
+Scores are relevance signals, never readiness or suitability.
+
 ## Role profile exports
 
 `export_roles.py` uses `CareerLookup` to export **every role**, including roles
