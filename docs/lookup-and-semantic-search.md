@@ -346,9 +346,13 @@ Recommendation:
 
 ## Related local example
 
-The Software Engineer combined profile is available in:
+The Software Engineer profile is available in the generated all-role export:
 
-- [Markdown profile](../data/software-engineer-combined.md)
-- [Structured JSON](../data/software-engineer-combined.json)
+- [Markdown profile](../data/role-profiles/roles/5ad023c4773fd21abc6e010292d435b76a4bca2189f3ad254ff39d836510c314.md)
+- [Structured JSON](../data/role-profiles/roles/5ad023c4773fd21abc6e010292d435b76a4bca2189f3ad254ff39d836510c314.json)
+- [All-role export manifest](../data/role-profiles/manifest.json)
 
-This document describes a proposed architecture. It does not mean all-role extraction, an embedding index or agent tools have already been implemented.
+Run `export_roles.py` to regenerate these gitignored outputs after ingestion.
+Structured lookup and all-role exports are implemented. The search architecture
+in this document remains a proposal; no embedding index or agent tools have yet
+been implemented.
