@@ -213,6 +213,27 @@ just the ranked canonical IDs, matching the `retrieve` contract used by
 `CareerLookup` (`get_role` / `get_course`) rather than parsing the snippets.
 Scores are relevance signals, never readiness or suitability.
 
+## Walkthrough scripts
+
+`demo_profile.py` and `guide.py` exercise the implemented flow with sample
+profiles expressed in the framework's own vocabulary (look up real terms with
+`--skills` / `--roles`):
+
+```sh
+.venv/bin/python demo_profile.py data                  # discover roles + courses
+.venv/bin/python demo_profile.py --skills "software"   # framework skill titles
+.venv/bin/python demo_profile.py --roles "software engineer"
+
+.venv/bin/python guide.py --profile data                 # end-to-end walkthrough
+.venv/bin/python guide.py --profile backend --role "Software Engineer"
+```
+
+The guide walks profile → candidate roles → focus-role requirements (marked as
+literally mentioned vs. candidate learning priority) → courses with source
+citations. It reports recorded facts only; proficiency assessment, readiness,
+course-to-skill mapping and funding eligibility are phase 4-6 work and are not
+inferred here.
+
 ## Role profile exports
 
 `export_roles.py` uses `CareerLookup` to export **every role**, including roles
