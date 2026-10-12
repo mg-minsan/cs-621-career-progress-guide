@@ -2,7 +2,7 @@
 import unittest
 
 from lookup import DEFAULT_DB
-from demo_profile import SAMPLE_PROFILES, discover
+from demo_profile import SAMPLE_PROFILES, discover, framework_roles, framework_skills
 
 
 class SampleProfileTests(unittest.TestCase):
@@ -22,12 +22,19 @@ class SuppliedWorkbookSampleProfileTests(unittest.TestCase):
         self.assertIn("Data Analyst", titles)
         self.assertTrue(result["course_candidates"])
 
-    def test_backend_profile_surfaces_roles_and_courses(self):
+    def test_backend_profile_surfaces_software_engineer(self):
         result = discover(SAMPLE_PROFILES["backend"])
-        self.assertTrue(result["role_candidates"])
+        titles = [candidate["title"] for candidate in result["role_candidates"]]
+        # Framework vocabulary (Software Design, Applications Development, ...)
+        # must surface Software Engineer even though the profile uses no
+        # technology names.
+        self.assertIn("Software Engineer", titles)
         self.assertTrue(result["course_candidates"])
-        self.assertTrue(all(candidate["skill_count"] >= 0
-                            for candidate in result["role_candidates"]))
+
+    def test_framework_vocabulary_lookup(self):
+        self.assertTrue(framework_skills("software design"))
+        self.assertTrue(framework_roles("software engineer"))
+        self.assertTrue(all("title" in skill for skill in framework_skills("data")))
 
 
 if __name__ == "__main__":
