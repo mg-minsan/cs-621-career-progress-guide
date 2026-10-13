@@ -213,6 +213,45 @@ just the ranked canonical IDs, matching the `retrieve` contract used by
 `CareerLookup` (`get_role` / `get_course`) rather than parsing the snippets.
 Scores are relevance signals, never readiness or suitability.
 
+## Profile schema
+
+`profile.py` defines and validates the JSON user profile schema (phase 4):
+interests, numeric experience, skills with claimed proficiency, evidence and
+assessment method, current role, optional target role, budget, study time,
+language and qualifications. `validate_profile(profile)` returns the standard
+envelope with `status`, normalised `data`, `errors`, `missing_data` and an
+`evidence` split that separates `supplied_facts`, `self_reported_claims` and
+`inferred_matches`.
+
+```python
+from profile import validate_profile
+
+result = validate_profile({
+    "current_role": "Junior Backend Developer",
+    "experience_years": 2,
+    "skills": [
+        {"name": "Python", "level": "intermediate",
+         "evidence": "Built REST APIs at work", "assessment_type": "self_reported"},
+    ],
+    "target_role": {"type": "role", "sector": "Infocomm Technology",
+                    "track": "Software and Applications",
+                    "title": "Software Engineer"},
+    "constraints": {"budget_sgd": 1200, "hours_per_week": 6,
+                    "language": "English"},
+})
+print(result["status"])        # ok
+print(result["evidence"]["self_reported_claims"])  # the Python claim
+```
+
+All fields are optional; a profile may contain some or all of them. Skills may
+be bare titles (strings) or dicts. `missing_data` reports coverage gaps, never
+a claim that a skill is absent: an empty `skills` list is kept empty and
+flagged, not read as "no skills". Claimed proficiency (`level`) and framework
+`framework_level` stay labels and are never auto-converted to numbers, and no
+readiness score is produced. Assessment types are `self_reported`, `verified`
+(credential-backed, still a user claim) and `inferred` (system-derived, never a
+user claim).
+
 ## Walkthrough scripts
 
 `demo_profile.py` and `guide.py` exercise the implemented flow with sample

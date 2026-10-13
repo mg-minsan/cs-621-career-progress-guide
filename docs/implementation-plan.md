@@ -36,6 +36,9 @@ Recommendations must distinguish source facts from inferred matches. The system 
 - Implemented the role and course keyword search baseline in `search.py` using
   BM25 over retrieval-ready text, with exact identifiers preferred over ranking
   and sector/track filters for roles; results carry entity IDs and evidence.
+- Defined and validated the user profile schema in `profile.py`, separating
+  supplied facts, self-reported claims and inferred competency matches while
+  never treating missing evidence as a missing skill or computing readiness.
 
 ### Verified outputs
 
@@ -56,6 +59,8 @@ Recommendations must distinguish source facts from inferred matches. The system 
 | Evaluation tests | `tests/test_eval_fixtures.py`, `tests/test_evaluate.py` |
 | Keyword search | `search.py` |
 | Search tests | `tests/test_search.py` |
+| Profile schema and validation | `profile.py` |
+| Profile schema tests | `tests/test_profile.py` |
 
 The pre-existing `data/career.duckdb` was not overwritten. Subsequent tools should accept an explicit database path and use the fresh database by default.
 
