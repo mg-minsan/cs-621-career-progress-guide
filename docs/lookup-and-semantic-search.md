@@ -353,5 +353,6 @@ The Software Engineer profile is available in the generated all-role export:
 - [All-role export manifest](../data/role-profiles/manifest.json)
 
 Run `export_roles.py` to regenerate these gitignored outputs after ingestion.
-Structured lookup, all-role exports and the keyword search baseline are
-implemented. Embeddings and agent tools remain unimplemented.
+Structured lookup, all-role exports, the keyword search baseline and the
+hybrid semantic index (`embeddings.py`, `semantic_search.py`,
+`build_embeddings.py`) are implemented. Agent tools remain unimplemented.

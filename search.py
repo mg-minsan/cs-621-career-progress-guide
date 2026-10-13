@@ -252,6 +252,16 @@ class KeywordSearch:
         return {"status": "ok", "entity_type": entity_type, "query": query,
                 "results": results}
 
+    def keyword_results(self, query: str, entity_type: str,
+                        sector: str | None = None, track: str | None = None,
+                        limit: int | None = None) -> list[dict]:
+        """Raw BM25-ranked results without exact-identifier short-circuiting.
+
+        Used by the hybrid semantic retriever to fuse keyword and vector scores;
+        ``search`` is the user-facing entry point that prefers exact matches.
+        """
+        return self._keyword_results(entity_type, query, sector, track, limit)
+
     def rank(self, query: str, entity_type: str, filters: dict | None = None,
              limit: int | None = None) -> list[str]:
         """Ranked canonical entity IDs, suitable for ``evaluate_retrieval``.

@@ -213,6 +213,47 @@ just the ranked canonical IDs, matching the `retrieve` contract used by
 `CareerLookup` (`get_role` / `get_course`) rather than parsing the snippets.
 Scores are relevance signals, never readiness or suitability.
 
+## Semantic search
+
+`semantic_search.py` builds and queries a local vector index over the same
+bounded `core.search_documents` text used by keyword search (roles:
+descriptions, tasks and required-skill titles; courses: titles, descriptions
+and learning outcomes). `SemanticSearch` fuses BM25 keyword scores with
+cosine-similarity scores using reciprocal rank fusion and deduplicates chunks
+by entity before ranking; exact identifiers still short-circuit ranking.
+
+```sh
+.venv/bin/python build_embeddings.py            # writes data/semantic-index/
+.venv/bin/python evaluate_semantic.py           # keyword vs semantic metrics
+```
+
+```python
+from semantic_search import SemanticSearch
+
+with SemanticSearch() as search:
+    roles = search.search("I build backend APIs with Python", "role", limit=10)
+    report = search.coverage()  # indexed vs source entity counts
+```
+
+The embedding model is `hash-ngram-v1` (`embeddings.py`): a deterministic,
+dependency-light, feature-hashed character-ngram embedder that needs only
+NumPy. It has no token limit, so long documents are never silently truncated;
+boundedness comes from the text construction, not the model. The manifest
+records the model ID and full configuration, the text-construction version,
+per-document content hashes and the source database SHA-256, so an index built
+under a different model or configuration is refused at load time rather than
+silently mixed. `build_embeddings.py` reports per-entity-type coverage and
+excluded empty records; the supplied database indexes all 2,030 roles and
+26,099 courses with zero empty or duplicated documents.
+
+This model captures lexical and subword similarity, not deep paraphrase. It is
+the plan's "local vector files and NumPy ranking" starting point; upgrade to a
+trained neural model (for example `sentence-transformers`
+`all-MiniLM-L6-v2`) when the runtime supports it, and rebuild the index — the
+model identity pinning makes a replacement a deliberate rebuild, never an
+accidental mix. Search scores remain relevance signals, never readiness or
+suitability.
+
 ## Profile schema
 
 `profile.py` defines and validates the JSON user profile schema (phase 4):
@@ -382,6 +423,11 @@ output against its scenario: required sections, citation accuracy, allowed
 assessment labels, budget/language constraints, prerequisite uncertainty and
 absence of fabricated claims.
 
+`evaluate_semantic.py` scores the keyword baseline and the hybrid semantic
+retriever side by side against `retrieval_cases`, and prints the semantic index
+coverage, so the embedding model's contribution is measurable rather than
+assumed.
+
 ## Verification
 
 ```sh
@@ -398,10 +444,16 @@ ambiguity, exact code/level comparisons, parameterised input, fee precision,
 per-item provenance, missing records and read-only database protection. Export
 fixtures verify complete profiles, K&A evidence, missing-data disclosures,
 safe filenames, escaped Markdown, source citations, deterministic output,
-file hashes, existing-output protection and failure cleanup.
+file hashes, existing-output protection and failure cleanup. Semantic search
+tests verify embedding determinism and normalisation, the absence of silent
+truncation, index coverage and model-mismatch refusal, exact-identifier
+preference, sector/track filtering and hybrid score/evidence output.
 
 If `data/career-ingested.duckdb` exists, a snapshot test checks that Software
-Engineer returns all 27 requirements with provenance. If the full role export
+Engineer returns all 27 requirements with provenance. If `data/semantic-index`
+has been built, further snapshot tests check index coverage and that
+natural-language role queries surface the reviewed relevant candidates with
+mean reciprocal rank no worse than the keyword baseline. If the full role export
 also exists, another snapshot test checks manifest coverage and the Software
 Engineer export. These checks are otherwise skipped. The fixture tests do not
 require the supplied large workbooks or generated exports.

@@ -39,6 +39,15 @@ Recommendations must distinguish source facts from inferred matches. The system 
 - Defined and validated the user profile schema in `profile.py`, separating
   supplied facts, self-reported claims and inferred competency matches while
   never treating missing evidence as a missing skill or computing readiness.
+- Built and evaluated role and course semantic retrieval in
+  `embeddings.py` + `semantic_search.py` + `build_embeddings.py`, using a
+  deterministic, dependency-light feature-hashed character-ngram embedder
+  pinned by model ID/configuration so query and document vectors are always
+  compatible. The local index stores entity IDs, document IDs, content hashes
+  and the model/configuration and text-construction version; coverage and
+  excluded-empty records are reported; and BM25 keyword scores are fused with
+  cosine similarity (reciprocal rank fusion) after deduplicating chunks by
+  entity.
 
 ### Verified outputs
 
@@ -61,13 +70,16 @@ Recommendations must distinguish source facts from inferred matches. The system 
 | Search tests | `tests/test_search.py` |
 | Profile schema and validation | `profile.py` |
 | Profile schema tests | `tests/test_profile.py` |
+| Embedding model | `embeddings.py` |
+| Semantic index build and hybrid retrieval | `semantic_search.py`, `build_embeddings.py` |
+| Semantic evaluation | `evaluate_semantic.py` |
+| Semantic search tests | `tests/test_semantic_search.py` |
 
 The pre-existing `data/career.duckdb` was not overwritten. Subsequent tools should accept an explicit database path and use the fresh database by default.
 
 ### Not yet implemented
 
 - Agent tools (the Python structured lookup API is implemented).
-- Embedding indexes and semantic retrieval.
 - User profile assessment.
 - Validated course-to-skill associations.
 - Recommendation agent or generated career guides.
@@ -322,10 +334,11 @@ Measure retrieval relevance separately from recommendation quality. Review outpu
 
 ## Immediate next step
 
-Phase 1 lookup and role exports, the reviewed evaluation fixtures and the
-role/course keyword search baseline are implemented. Next is the user profile
-schema and semantic retrieval, then a small end-to-end example before
-investing in embeddings or a full agent.
+Phase 1 lookup and role exports, the reviewed evaluation fixtures, the
+role/course keyword search baseline, the user profile schema and semantic
+retrieval are implemented. Next is profile assessment (learning priorities),
+course matching with constraint checks, and a small end-to-end guide before
+exposing agent tools.
 
 ## Related documents
 
