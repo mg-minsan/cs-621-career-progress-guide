@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """End-to-end career/course walkthrough from a profile (retrieval + lookup).
 
-This chains the implemented pieces — keyword search and structured lookup —
+This chains keyword search, hybrid target discovery and structured lookup
 into one flow:
 
     profile -> candidate roles -> role requirements -> courses -> cited summary
@@ -17,6 +17,8 @@ Usage:
     .venv/bin/python guide.py
     .venv/bin/python guide.py --profile data
     .venv/bin/python guide.py --profile backend --role "Software Engineer"
+    .venv/bin/python guide.py --profile backend --role "Research Engineer"
+    .venv/bin/python guide.py --profile backend --role-id "<canonical-role-id>"
 """
 from __future__ import annotations
 
@@ -27,6 +29,7 @@ import sys
 from demo_profile import SAMPLE_PROFILES, _profile_query
 from lookup import CareerLookup, DEFAULT_DB
 from search import KeywordSearch
+from semantic_search import SemanticSearch, default_index_dir
 
 
 def _citations(sources: list[dict]) -> list[str]:
@@ -49,9 +52,50 @@ def _mentioned(skill_title: str, profile: dict) -> bool:
     return title in terms or any(term in title for term in terms)
 
 
+def _suggest_roles(query: str, search: KeywordSearch | SemanticSearch,
+                   lookup: CareerLookup) -> dict:
+    suggestions, seen = [], set()
+    for hit in search.search(query, "role", limit=None)["results"]:
+        if hit["entity_id"] in seen:
+            continue
+        recorded = lookup.get_role(hit["entity_id"])
+        if recorded["status"] != "ok":
+            raise RuntimeError(
+                "Semantic index is corrupt: retrieved role ID is not recorded "
+                f"in the database: {hit['entity_id']}. Rebuild the index.")
+        seen.add(hit["entity_id"])
+        role = recorded["data"]
+        suggestions.append({
+            "role_id": role["role_id"], "title": role["role_title"],
+            "sector": role["sector"], "track": role["track"],
+            "description": role["description"], "evidence": hit["evidence"],
+            "source_records": recorded["source_records"],
+            "sources": _citations(sorted(recorded["source_records"],
+                                        key=lambda s: s["source_table"] != "roles")),
+            "score": hit["score"],
+        })
+        if len(suggestions) == 5:
+            break
+    return {"error": "not_found", "role_title": query,
+            "suggestions": suggestions, "selection_required": bool(suggestions),
+            "focus_role": None, "requirements": [], "courses": [],
+            "message": ("Suggestions are relevance signals, not qualification or "
+                        "readiness assessments. Select a canonical role ID before "
+                        "generating a guide." if suggestions else
+                        "No matching recorded roles found for the supplied target.")}
+
+
 def run(profile: dict, role_title: str | None = None, db_path=DEFAULT_DB,
-        role_limit: int = 5, course_limit: int = 4) -> dict:
-    """Walk the flow and return a structured, citation-backed result."""
+        role_limit: int = 5, course_limit: int = 4, *,
+        index_dir: str | Path | None = None, role_id: str | None = None) -> dict:
+    """Walk the flow; approximate targets require explicit canonical-ID selection."""
+    if role_id is not None and role_title is not None:
+        raise ValueError("Supply either role_title or role_id, not both.")
+    if role_title is not None and not role_title.strip():
+        return {"error": "empty_target", "role_title": role_title,
+                "suggestions": [], "selection_required": False,
+                "focus_role": None, "requirements": [], "courses": [],
+                "message": "Target role is empty. Supply a title or description."}
     with KeywordSearch(db_path) as search, CareerLookup(db_path) as lookup:
         candidates = []
         for item in search.search(_profile_query(profile), "role",
@@ -65,20 +109,40 @@ def run(profile: dict, role_title: str | None = None, db_path=DEFAULT_DB,
             })
 
         focus_result = None
-        if role_title:
+        if role_id is not None:
+            focus_result = lookup.get_role(role_id)
+            if focus_result["status"] == "not_found":
+                return {"error": "not_found", "role_id": role_id,
+                        "suggestions": [], "selection_required": False,
+                        "focus_role": None, "requirements": [], "courses": [],
+                        "message": f"Canonical role ID not found: {role_id}"}
+        elif role_title is not None:
             resolved = lookup.resolve_role(role_title)
             if resolved["status"] == "ambiguous":
                 return {"error": "ambiguous",
-                        "candidates": [{"title": c["role_title"],
+                        "candidates": [{"role_id": c["role_id"], "title": c["role_title"],
                                         "sector": c["sector"], "track": c["track"]}
                                        for c in resolved["data"]]}
             if resolved["status"] == "not_found":
-                return {"error": "not_found", "role_title": role_title}
+                index_path = (Path(index_dir) if index_dir is not None
+                              else default_index_dir(db_path))
+                if index_path.exists() or index_path.is_symlink():
+                    with SemanticSearch(db_path, index_dir=index_path) as semantic:
+                        suggested = _suggest_roles(role_title, semantic, lookup)
+                    method = "hybrid"
+                    disclosure = "Hybrid keyword/vector retrieval (reciprocal rank fusion)."
+                else:
+                    suggested = _suggest_roles(role_title, search, lookup)
+                    method = "keyword"
+                    disclosure = "Semantic index missing; using keyword fallback."
+                suggested.update({"retrieval_method": method,
+                                  "retrieval_disclosure": disclosure})
+                return suggested
             focus_result = resolved
         elif candidates:
             focus_result = lookup.get_role(candidates[0]["role_id"])
 
-        result = {"profile": profile, "candidates": candidates,
+        result: dict = {"profile": profile, "candidates": candidates,
                   "focus_role": None, "requirements": [], "courses": [],
                   "role_sources": []}
         if focus_result is None or focus_result.get("data") is None:
@@ -127,11 +191,30 @@ def run(profile: dict, role_title: str | None = None, db_path=DEFAULT_DB,
 def _print(result: dict) -> None:
     if result.get("error"):
         if result["error"] == "ambiguous":
-            print("Role title is ambiguous. Narrow with --profile's sector/track, or:")
+            print("Role title is ambiguous. Select a canonical role ID with --role-id:")
             for candidate in result["candidates"]:
-                print(f"  - {candidate['title']} [{candidate['sector']} / {candidate['track']}]")
+                print(f"  - {candidate['role_id']}: {candidate['title']} "
+                      f"[{candidate['sector']} / {candidate['track']}]")
         else:
-            print(f"Role not found: {result['role_title']}")
+            if "role_title" in result:
+                print(f"Role not found: {result['role_title']}")
+            if result.get("retrieval_disclosure"):
+                print(result["retrieval_disclosure"])
+            print(result["message"])
+            for candidate in result.get("suggestions", []):
+                print(f"  - {candidate['role_id']}: {candidate['title']} "
+                      f"[{candidate['sector']} / {candidate['track']}]")
+                if candidate["description"]:
+                    print(f"    description: {candidate['description'][:220]}")
+                for evidence in candidate["evidence"]:
+                    print(f"    evidence ({evidence['section']}): {evidence['snippet']}")
+                citations = candidate["sources"]
+                print(f"    sources: {'; '.join(citations[:3]) or 'not recorded'}")
+                if len(citations) > 3:
+                    print(f"    (+{len(citations) - 3} source rows in structured result)")
+            if result.get("selection_required"):
+                print('Rerun with --profile <profile> --role-id "<canonical-role-id>" '
+                      '(and the same --db if supplied).')
         return
 
     profile = result["profile"]
@@ -179,17 +262,29 @@ def _print(result: dict) -> None:
 
 
 def main(argv: list[str]) -> int:
-    if not DEFAULT_DB.is_file():
-        print(f"Career database not found: {DEFAULT_DB}. Run "
-              f"`.venv/bin/python ingest.py --db data/career-ingested.duckdb` first.")
-        return 1
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--profile", default="backend", choices=list(SAMPLE_PROFILES))
-    parser.add_argument("--role", default=None,
-                        help="target role title (default: top search candidate)")
+    target = parser.add_mutually_exclusive_group()
+    target.add_argument("--role", default=None,
+                        help="target title or description; approximate matches require selection")
+    target.add_argument("--role-id", default=None,
+                        help="explicitly select a recorded canonical role ID")
+    parser.add_argument("--db", type=Path, default=DEFAULT_DB,
+                        help="career database path")
+    parser.add_argument("--index-dir", type=Path, default=None,
+                        help="semantic index path (default: semantic-index beside the database)")
     args = parser.parse_args(argv)
-    _print(run(SAMPLE_PROFILES[args.profile], role_title=args.role))
+    if not args.db.is_file():
+        print(f"Career database not found: {args.db}. Run ingest.py first.", file=sys.stderr)
+        return 1
+    try:
+        result = run(SAMPLE_PROFILES[args.profile], role_title=args.role,
+                     role_id=args.role_id, db_path=args.db, index_dir=args.index_dir)
+    except (RuntimeError, OSError, ValueError) as exc:
+        print(f"Guide failed: {exc}", file=sys.stderr)
+        return 1
+    _print(result)
     return 0
 
 

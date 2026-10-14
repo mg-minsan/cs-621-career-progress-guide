@@ -306,6 +306,8 @@ profiles expressed in the framework's own vocabulary (look up real terms with
 
 .venv/bin/python guide.py --profile data                 # end-to-end walkthrough
 .venv/bin/python guide.py --profile backend --role "Software Engineer"
+.venv/bin/python guide.py --profile backend --role "Research Engineer"  # suggestions only
+.venv/bin/python guide.py --profile backend --role-id "<canonical-role-id>"  # explicit selection
 ```
 
 The guide walks profile → candidate roles → focus-role requirements (marked as
@@ -313,6 +315,33 @@ literally mentioned vs. candidate learning priority) → courses with source
 citations. It reports recorded facts only; proficiency assessment, readiness,
 course-to-skill mapping and funding eligibility are phase 4-6 work and are not
 inferred here.
+
+Target roles resolve by exact title first. Ambiguous titles show **every** recorded
+candidate with its canonical ID, sector and track; none is selected automatically.
+An unknown `--role` title (or description) shows up to five deduplicated recorded
+roles with descriptions, retrieval evidence and spreadsheet citations. With a
+semantic index, suggestions use hybrid keyword/vector retrieval; without one, the
+guide explicitly discloses its keyword fallback. These are relevance signals,
+not qualification or readiness assessments. Rerun with `--role-id` to select a
+candidate before generating its guide; `--role` and `--role-id` are mutually
+exclusive. Omitting both keeps the original profile-based walkthrough.
+
+Use `--db /path/to/career.duckdb` for another database and optionally
+`--index-dir /path/to/index`; the default index is `semantic-index` beside the
+database. A present but corrupt, incompatible or stale index fails clearly
+instead of silently falling back. Exact-title/ID lookup does not require the
+index. Empty target text and queries with no recorded matches produce explicit
+messages rather than an automatic focus role.
+
+For UI reuse, `guide.run(profile, role_title=..., db_path=..., index_dir=...)`
+returns `error="not_found"` for an unknown exact title, with `suggestions`,
+`retrieval_method` (`hybrid` or `keyword`), `retrieval_disclosure`, `message` and
+`selection_required`. Each suggestion includes `role_id`, `title`, `sector`,
+`track`, full recorded `description`, `evidence`, `score`, `source_records` and
+formatted `sources`. `focus_role` is null and requirements/courses are empty
+until the caller explicitly selects a canonical ID using
+`guide.run(profile, role_id=..., db_path=...)`. Invalid indexes raise a clear
+`RuntimeError`; the CLI reports it on stderr and exits nonzero.
 
 ## Role profile exports
 

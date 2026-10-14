@@ -139,6 +139,14 @@ def _iso_now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+def _db_sha256(db_path: Path) -> str:
+    digest = hashlib.sha256()
+    with db_path.open("rb") as source:
+        for chunk in iter(lambda: source.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
 def build_semantic_index(db_path=DEFAULT_DB, index_dir=None, replace=False) -> dict:
     """Build (or rebuild) the local vector index and return its report.
 
@@ -156,7 +164,7 @@ def build_semantic_index(db_path=DEFAULT_DB, index_dir=None, replace=False) -> d
         raise FileExistsError(
             f"Index already exists at {index_dir}; pass replace=True to rebuild.")
 
-    source_db_sha256 = hashlib.sha256(db_path.read_bytes()).hexdigest()
+    source_db_sha256 = _db_sha256(db_path)
 
     con = duckdb.connect(str(db_path), read_only=True)
     try:
@@ -225,24 +233,47 @@ def build_semantic_index(db_path=DEFAULT_DB, index_dir=None, replace=False) -> d
 def load_semantic_index(index_dir, verify_model=True) -> dict:
     """Load a built index and validate its model and shape.
 
-    Raises RuntimeError when the stored model/configuration does not match the
-    embedder this process would use (incompatible vector mixing is refused), or
-    when the vectors do not align with the stored document metadata.
+    Raises RuntimeError for incompatible schema, text construction or model
+    configuration, unreadable files, invalid metadata or nonfinite/misaligned
+    vectors. A wholly absent index raises FileNotFoundError.
     """
     index_dir = Path(index_dir).resolve()
     manifest_path = index_dir / "manifest.json"
-    if not manifest_path.is_file():
+    if not index_dir.exists():
         raise FileNotFoundError(
-            f"Semantic index not found: {manifest_path}. Run build_embeddings.py.")
-    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            f"Semantic index not found: {index_dir}. Run build_embeddings.py.")
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        vectors = np.load(index_dir / "vectors.npy", allow_pickle=False)
+    except (OSError, ValueError, EOFError) as exc:
+        raise RuntimeError(
+            f"Semantic index is corrupt or unreadable at {index_dir}: {exc}. "
+            "Rebuild with build_embeddings.py --replace.") from exc
+    if not isinstance(manifest, dict):
+        raise RuntimeError("Semantic index is corrupt: manifest must be an object.")
+    if (manifest.get("schema_version") != INDEX_SCHEMA_VERSION or
+            manifest.get("text_version") != TEXT_VERSION):
+        raise RuntimeError(
+            "Semantic index schema/text version is incompatible. Rebuild the index.")
     signature = {"model_id": manifest.get("model_id"),
                  "model_config": manifest.get("model_config")}
     if verify_model and not is_compatible_model(signature):
         raise RuntimeError(
             f"Semantic index model mismatch: stored {signature!r} is incompatible "
             f"with this process's {model_signature()!r}. Rebuild the index.")
-    vectors = np.load(index_dir / "vectors.npy")
-    documents = manifest.get("documents", [])
+    documents = manifest.get("documents")
+    if (not isinstance(documents, list) or
+            manifest.get("document_count") != len(documents) or
+            any(not isinstance(doc, dict) or
+                doc.get("entity_type") not in INDEXED_ENTITY_TYPES or
+                any(not isinstance(doc.get(key), str) or not doc[key]
+                    for key in ("entity_id", "document_id", "content_hash"))
+                for doc in documents)):
+        raise RuntimeError("Semantic index is corrupt: invalid document metadata.")
+    if (not isinstance(vectors, np.ndarray) or vectors.ndim != 2 or
+            not np.issubdtype(vectors.dtype, np.floating) or
+            not np.isfinite(vectors).all()):
+        raise RuntimeError("Semantic index is corrupt: expected a finite 2D float matrix.")
     if vectors.shape[0] != len(documents):
         raise RuntimeError(
             f"Semantic index is corrupt: {vectors.shape[0]} vectors but "
@@ -273,6 +304,10 @@ class SemanticSearch:
                           else default_index_dir(self.db_path))
         loaded = load_semantic_index(self.index_dir, verify_model=verify_model)
         self.manifest = loaded["manifest"]
+        if self.manifest.get("source_db_sha256") != _db_sha256(self.db_path):
+            raise RuntimeError(
+                "Semantic index database mismatch: index is stale or belongs to a "
+                "different database. Rebuild the index.")
         self.vectors = loaded["vectors"]
         self.documents = loaded["documents"]
         self._con = duckdb.connect(str(self.db_path), read_only=True)
@@ -348,7 +383,7 @@ class SemanticSearch:
         query_vector = embed_text(query)
         scores = self.vectors[row_indices] @ query_vector
         order = np.argsort(-scores, kind="stable")
-        best = {}
+        best: dict = {}
         for offset in order:
             score = float(scores[offset])
             if score <= 0:
@@ -367,7 +402,7 @@ class SemanticSearch:
                         sector, track) -> list[dict]:
         """BM25-ranked results, deduplicated by entity (highest score first)."""
         results = self._keyword.keyword_results(query, entity_type, sector, track)
-        best = {}
+        best: dict = {}
         for result in results:
             best.setdefault(result["entity_id"], result)
         ranked = sorted(best.values(), key=lambda item: -item["score"])
