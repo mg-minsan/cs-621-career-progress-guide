@@ -1,77 +1,113 @@
-# THROWAWAY: Streamlit skill-coverage POC
+# THROWAWAY: LangChain + OpenAI skill-gap POC
 
 **Question:** Can a JSON list such as `{"skills": ["data analysis", "python"]}`
-produce a useful, reviewable coverage comparison against a recorded target role?
-This is a functional prototype, not a production recommendation engine or a
-validated skill/proficiency assessment. Keep it separate until the flow is useful.
+produce a useful automatic skill-gap analysis against a recorded target role?
+The user selects **only the role**. The LLM maps skills and infers potential gaps;
+there is no per-skill confirmation step. This is not a validated competency or
+proficiency assessment and is not a production recommendation engine.
 
 ## Run
 
-From the repository root, install the isolated POC's dependencies once:
+From the repository root, install this POC's dependencies:
 
 ```sh
 .venv/bin/python -m pip install -r prototype_skill_gaps/requirements.txt
 ```
 
-Then start it with one command:
+Configure your OpenAI key in the launching shell (or enter it in the app's password
+field; do not commit it or put it in the profile):
 
 ```sh
-.venv/bin/python -m streamlit run prototype_skill_gaps/app.py --server.address 127.0.0.1
+export OPENAI_API_KEY="your-openai-api-key"
+export OPENAI_MODEL="gpt-4.1-mini"  # optional; this is the default
 ```
 
-Open **http://localhost:8501**. Stop with Ctrl+C. The app reads the existing career
-DuckDB (default `data/career-ingested.duckdb`) and optionally the existing
-`semantic-index` beside it. Use the sidebar for another database. If no database
-exists, prepare it using the repository's documented ingestion command first.
-It never changes the database or builds a persistent index.
+Start with one command:
+
+```sh
+.venv/bin/python -m streamlit run prototype_skill_gaps/app.py --server.address 127.0.0.1 --browser.gatherUsageStats false
+```
+
+Open **http://localhost:8501**. Stop with Ctrl+C. Restart the server after changing
+its environment, or use the sidebar key/model fields. The configured model must
+support OpenAI strict JSON-schema structured output and temperature=0; a model
+without support fails clearly rather than silently switching models. Role search
+works without an API key; gap analysis does not. API usage may incur charges.
+
+The app reads `data/career-ingested.duckdb` by default. Choose another database in
+the sidebar. Unknown targets reuse the hybrid role index beside the database;
+a missing index uses a disclosed keyword fallback, while invalid indexes fail.
+The database and existing CLI remain unchanged.
 
 ## Try the flow
 
 1. Paste JSON or upload a `.json` file. Upload takes precedence. The included
-   `sample_profile.json` has `data analysis`, `python`, `SQL`, and `communication`.
-   Existing profile-schema dictionaries with `name`, evidence, level, and optional
-   exact `framework_code` are accepted as well. Supplied levels are retained,
-   **not** compared to required framework levels.
-2. Enter a target title/description or canonical ID and click **Find roles**.
-   Exact-title ambiguities retain every candidate. Unknown targets reuse the
-   guide's hybrid role suggestions, with disclosed keyword fallback if the index
-   is absent; corrupt/incompatible indexes produce an error, not a silent fallback.
-3. Explicitly choose a recorded role. Inspect its description and source records.
-4. Review possible skill mappings and optionally confirm them. Apply confirmations
-   to update the report; select “Unconfirmed / not listed” and apply to clear one.
-5. Inspect the requirement table and evidence, or download the report as JSON.
+   `sample_profile.json` contains `data analysis`, `python`, `SQL`, `communication`.
+   Skill dictionaries with `name`, `evidence`, `level`, `assessment_type`, and exact
+   `framework_code` / `framework_level` also use the existing profile schema.
+2. Enter a target title, description, or canonical ID and click **Find roles**.
+3. Explicitly select the recorded role. Exact ambiguities retain every candidate;
+   approximate role suggestions are never automatically selected.
+4. Inspect **Exact data sent to OpenAI**, then click **Analyse skill gaps with
+   OpenAI**. This is an API action, not a skill-confirmation workflow.
+5. Read the automatic findings, rationale, profile evidence, scope not evidenced,
+   uncertainty, recorded definitions and spreadsheet sources. Download JSON if useful.
 
-## What the labels mean
+## LLM findings
 
-- **matched**: a case-insensitive exact skill title, exact supplied framework code,
-  or a user-confirmed mapping. This is self-reported coverage, not proof of mastery.
-- **possible_match**: local keyword/vector retrieval found a candidate mapping,
-  but the user has not confirmed it. It is not counted as matched.
-- **not_listed**: no confirmed or candidate mapping. A candidate learning gap or
-  unknown coverage—not proof the user lacks the skill.
-- **proficiency = not_assessed**: names alone cannot establish the recorded required
-  level. No readiness percentage, funding eligibility, or course recommendations.
+- **covered**: supplied claims represent the requirement's skill area. This can
+  be self-reported coverage from names alone, never proof of required proficiency.
+- **partially_covered**: relevant skills/evidence cover part of the recorded scope.
+- **potential_gap**: relevant scope is not evidenced by this profile; not proof the
+  user actually lacks it.
+- **insufficient_information**: profile/requirements are too vague or incomplete.
+  With no profile skills, all findings must have this status.
 
-For skill names, the POC ranks only the selected role's requirement titles,
-definitions, and recorded proficiency descriptions. It combines word-overlap and
-project `hash-ngram-v1` vector rankings using reciprocal rank fusion. Up to three
-requirements per profile skill are retained, with a heuristic vector threshold of
-0.25; exact matches skip approximate matching. This is **not** a validated skill
-ontology, deep semantic model, or the persisted role/course index. Python may
-produce irrelevant/no mappings; verify the framework definitions rather than
-assuming it satisfies programming or data-analysis requirements.
+All mappings are **system-inferred**, with no manual skill approval. Python must
+not automatically satisfy every programming, modelling or data-analysis requirement.
+Required framework levels stay visible, but proficiency is **not_assessed**. No
+readiness/confidence percentages, funding decisions or course recommendations.
 
-Profile data and confirmations are session-only. Editing the profile or changing
-the selected role/database resets confirmations. Role-query edits require another
-search. No profile files are saved automatically, and no external model API is
-used. Only Download writes a report at your explicit request. Run on localhost;
-there is no authentication or production hardening.
+## Grounding and limits
 
-## Boundary / verdict
+`skill_coverage.py` uses LangChain `ChatOpenAI.with_structured_output` with a strict
+Pydantic schema. One explicit analysis request includes every recorded requirement,
+without top-k filtering. It has a 90-second request timeout, one SDK retry and a
+14,000-token output budget; very large roles may time out or truncate. The app
+accepts no partial report: Python rejects missing, duplicate or invented requirement
+IDs, unknown profile skill IDs, empty/unsupported evidence quotes, or coverage
+claims with no profile reference. Quotes must appear literally in the named input
+field. Original titles, codes, levels, definitions and source records are attached
+locally, not generated by the LLM.
 
-`skill_coverage.py` is pure prototype comparison logic; `app.py` owns UI and
-read-only lookups. Production modules and CLI remain unchanged. No automated test
-suite is added for throwaway code; validate the interaction using Streamlit's
-AppTest plus a local server smoke check. Decide whether name/code coverage and
-manual confirmation are useful before promoting or deleting this folder. Durable
-prototype tracking: Beads `career-m5z-n1y`.
+This validates structural references—not the truth of a claim, semantic correctness
+of a mapping, or the quality of a model's explanation. Narrative reasoning can
+still be wrong. The prompt treats profile/source text as untrusted data and
+forbids readiness/proficiency claims, but prompt-injection resistance is not a
+security guarantee. This POC needs human evaluation before production use.
+
+## Privacy and session state
+
+**Unlike the original local-only version, analysis sends data to OpenAI.** The
+preview shows exactly what is sent: normalized skill claims and their evidence,
+plus the selected role identity/description and recorded requirements/definitions.
+Other profile fields, local paths, source file records and the API key are not
+included in the model prompt. The API key authenticates the HTTPS request. Provider
+retention policies apply; remove sensitive evidence before submitting.
+
+The OpenAI endpoint is explicit; no external tools are enabled. LangSmith tracing
+is disabled around calls even if tracing is configured globally. The app does not
+save profiles/reports or keys to disk. Results are kept only in the current session;
+ordinary reruns do not call OpenAI. Changing the profile, role, requirement data,
+database or model invalidates the displayed report and requires a new explicit
+analysis action. Clicking Analyse again makes another paid request. Only Download
+writes a report at the user's request. Run on localhost: no authentication or
+production hardening is provided.
+
+## Prototype boundary
+
+All changes stay in this folder. The former heuristic matcher/manual-confirmation
+flow is replaced, not used as a silent fallback for OpenAI failures. No production
+test suite is added for throwaway code. Use AppTest and a stubbed OpenAI HTTP
+transport for offline smoke checks; a real API call requires a valid user key.
+Durable tracking: Beads `career-m5z-78u` (supersedes the original POC workflow).

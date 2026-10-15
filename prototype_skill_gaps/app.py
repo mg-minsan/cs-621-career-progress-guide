@@ -1,13 +1,15 @@
 """THROWAWAY POC: can JSON skill names support a useful, reviewable coverage flow?
 
 Run from repo root: .venv/bin/python -m streamlit run prototype_skill_gaps/app.py
-Read-only career data; profile and confirmations live only in session memory.
+Read-only career data; profile and LLM reports live only in session memory.
 """
 from __future__ import annotations
 
 import hashlib
 import importlib.util
 import json
+import logging
+import os
 from pathlib import Path
 import sys
 
@@ -19,7 +21,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from guide import run as run_guide
 from lookup import CareerLookup, DEFAULT_DB
-from skill_coverage import build_coverage
+from openai import APIConnectionError, APIStatusError, APITimeoutError
+from skill_coverage import GAP_STATUSES, PROMPT_VERSION, analyse_gaps, analysis_payload
 
 # Load explicitly: the project's profile.py shares a name with Python's profiler.
 spec = importlib.util.spec_from_file_location("career_profile_schema", ROOT / "profile.py")
@@ -27,18 +30,27 @@ assert spec is not None and spec.loader is not None
 profile_schema = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(profile_schema)
 
-st.set_page_config(page_title="Skill coverage POC", layout="wide")
-st.title("Skill coverage · Streamlit POC")
-st.warning("Prototype only. Matched means a profile name/code or confirmed mapping—not "
-           "verified competence. Not listed is not proof you lack a skill. "
-           "Proficiency and readiness are NOT assessed.")
+st.set_page_config(page_title="LLM skill gaps POC", layout="wide")
+st.title("Skill gaps · LangChain + OpenAI POC")
+st.warning("Prototype only. Skill mappings and potential gaps are inferred by an LLM, "
+           "not verified assessments. Missing profile evidence does not prove a missing "
+           "skill. Required proficiency and readiness are NOT assessed.")
 
 with st.sidebar:
     st.header("Local data")
     db_path = Path(st.text_input("Career database", value=str(DEFAULT_DB), key="database_path")).expanduser()
-    st.caption("Read-only. No profile is written to disk or sent to an external model.")
+    st.caption("Read-only. Profiles and reports are not saved automatically.")
     st.caption("Role discovery uses the existing hybrid index when available, otherwise "
-               "disclosed keyword fallback. Skill matching uses local in-memory vectors.")
+               "disclosed keyword fallback. Only the role needs user selection.")
+    st.header("OpenAI")
+    api_key = st.text_input("OpenAI API key (or use OPENAI_API_KEY)", type="password",
+                            key="openai_api_key").strip() or os.environ.get("OPENAI_API_KEY", "")
+    model = st.text_input("OpenAI model", value=os.environ.get("OPENAI_MODEL", "gpt-4.1-mini"),
+                          key="openai_model").strip()
+    if not api_key:
+        st.info("Add an API key to enable gap analysis. Role search still works locally.")
+    st.caption("Analysis sends the displayed skill claims and recorded role requirements "
+               "to OpenAI and may incur API charges. LangSmith tracing is disabled.")
 
 st.header("1 · Provide a JSON profile")
 sample = (Path(__file__).parent / "sample_profile.json").read_text(encoding="utf-8")
@@ -58,7 +70,7 @@ profile = validated["data"]
 skills = profile["skills"]
 st.write("Profile skills:", ", ".join(skill["name"] for skill in skills) or "(none supplied)")
 if not skills:
-    st.info("No skills supplied. Requirements will be not listed, not confirmed gaps.")
+    st.info("No skills supplied. The report can only say insufficient information, not confirmed gaps.")
 
 st.header("2 · Select a recorded target role")
 query = st.text_input("Target title, description, or canonical role ID", value="Data Analyst", key="target_query")
@@ -139,77 +151,83 @@ with st.expander("Canonical role and spreadsheet sources"):
     st.code(role_id)
     st.json(recorded["source_records"])
 if not requirements:
-    st.info("This role has no recorded requirements. Coverage cannot be assessed.")
+    st.info("This role has no recorded requirements. Gap analysis cannot be performed.")
+    st.stop()
 
-# Bind confirmations to the profile, role and database—not to stale UI selections.
+payload = analysis_payload(skills, role, requirements)
 report_context = hashlib.sha256(json.dumps(
-    [str(db_path.resolve()), role_id, skills], sort_keys=True).encode()).hexdigest()
+    [str(db_path.resolve()), profile, payload, requirements, model, PROMPT_VERSION],
+    sort_keys=True, default=str).encode()).hexdigest()
 if st.session_state.get("report_context") != report_context:
     st.session_state["report_context"] = report_context
-    st.session_state["confirmed_mappings"] = {}
-rows = build_coverage(skills, requirements, st.session_state["confirmed_mappings"])
+    st.session_state.pop("gap_rows", None)
 
-st.header("3 · Review possible skill mappings")
-st.caption("Exact names/codes are self-reported coverage. Other candidates combine word "
-           "overlap and hash-ngram vectors over this role's titles, definitions and "
-           "required proficiency descriptions. Top-three and 0.25 vector threshold are "
-           "unvalidated POC heuristics; scores are relevance signals, not proficiency.")
-with st.expander("Confirm or clear mappings", expanded=any(r["status"] == "possible_match" for r in rows)):
-    if skills and requirements:
-        with st.form("confirm_skill_mappings"):
-            pending = {}
-            for row in rows:
-                if row["mapping_method"] == "exact_name_or_code":
-                    continue
-                candidate_indexes = {c["profile_index"] for c in row["candidates"]}
-                options = [-1, *range(len(skills))]
-                current = st.session_state["confirmed_mappings"].get(row["requirement_key"], -1)
-                chosen = st.selectbox(
-                    f"{row['title']} · {row['code']} · required level {row['required_level']}",
-                    options, index=options.index(current),
-                    key=f"mapping-{report_context}-{row['requirement_key']}",
-                    format_func=lambda i, suggested=candidate_indexes: "Unconfirmed / not listed" if i == -1
-                    else f"{skills[i]['name']} (profile entry {i + 1})" +
-                         (" — suggested" if i in suggested else ""),
-                )
-                if chosen >= 0:
-                    pending[row["requirement_key"]] = chosen
-            st.caption("Confirmation establishes only a skill mapping, not a required proficiency level.")
-            if st.form_submit_button("Apply confirmed mappings"):
-                st.session_state["confirmed_mappings"] = pending
-                st.rerun()
-    else:
-        st.write("No mappings to confirm.")
+st.header("3 · Analyse skill gaps automatically")
+st.info("Only the target role needs confirmation. The LLM maps your skills and infers "
+        "potential gaps automatically—there are no per-skill confirmation steps.")
+st.caption("Clicking Analyse sends the payload below to OpenAI. Names alone support only "
+           "tentative skill-area coverage, not mastery of a required framework level. "
+           "Results are reused in this session; ordinary UI reruns do not call the API.")
+with st.expander("Exact data sent to OpenAI (no API key or unrelated profile fields)"):
+    st.json(payload, expanded=False)
+if st.button("Analyse skill gaps with OpenAI", type="primary", key="analyse_gaps",
+             disabled=not api_key or not model):
+    st.session_state.pop("gap_rows", None)
+    try:
+        with st.spinner("LangChain + OpenAI are analysing every recorded requirement…"):
+            st.session_state["gap_rows"] = analyse_gaps(
+                skills, role, requirements, model=model, api_key=api_key)
+    except APITimeoutError:
+        st.error("OpenAI timed out. No report was accepted. Retry when ready.")
+    except APIConnectionError:
+        st.error("Could not connect to OpenAI. Check your network connection and retry.")
+    except APIStatusError as exc:
+        st.error(f"OpenAI rejected the request (HTTP {exc.status_code}). Check your API key, "
+                 "model access, quota and rate limits. No report was accepted.")
+    except ValueError:
+        st.error("The model response failed schema or evidence validation. Every requirement "
+                 "must be included exactly once with valid profile references. No partial "
+                 "report was accepted; retry or choose another supported model.")
+    except Exception as exc:
+        # Log only the type: provider responses may contain credentials or profile data.
+        logging.getLogger(__name__).warning("Gap analysis failed (%s)", type(exc).__name__)
+        st.error("Analysis failed unexpectedly. No report was accepted. The server log "
+                 "contains the error type, without the provider response or profile data.")
+if "gap_rows" not in st.session_state:
+    st.caption("Select a role, configure OpenAI, and click Analyse to generate the report.")
+    st.stop()
+rows = st.session_state["gap_rows"]
 
-st.header("4 · Skill coverage report")
-counts = {status: sum(row["status"] == status for row in rows)
-          for status in ("matched", "possible_match", "not_listed")}
-for column, (status, count) in zip(st.columns(3), counts.items()):
+st.header("4 · LLM skill-gap report")
+counts = {status: sum(row["status"] == status for row in rows) for status in GAP_STATUSES}
+for column, (status, count) in zip(st.columns(4), counts.items()):
     column.metric(status.replace("_", " ").title(), count)
 st.dataframe([
     {"Required skill": row["title"], "Code": row["code"], "Required level": row["required_level"],
-     "Coverage": row["status"], "Profile match": ", ".join(row["matched_profile_skills"]),
-     "Unconfirmed candidates": ", ".join(c["profile_skill"] for c in row["candidates"]),
-     "Proficiency": row["proficiency_status"]}
+     "LLM finding": row["status"], "Profile skills": ", ".join(row["mapped_profile_skills"]),
+     "Reason": row["rationale"], "Scope not evidenced": "; ".join(row["missing_scope"]),
+     "Uncertainty": row["uncertainty"], "Proficiency": row["proficiency_status"]}
     for row in rows
 ], hide_index=True, width="stretch")
-st.caption("Not listed = candidate learning gap / unknown coverage, not a confirmed deficiency. "
-           "We do not infer skill mastery from names, years of experience or current role.")
-with st.expander("Requirement evidence, candidate scores, and missing-data flags"):
+st.caption("All findings are system-inferred. Covered means the profile represents a skill "
+           "area, not verified required-level competence. Potential gap means scope not "
+           "evidenced in this profile, not an established deficiency.")
+with st.expander("Mapping rationale, profile evidence, recorded definitions and citations"):
     for row in rows:
-        st.subheader(f"{row['title']} · {row['required_level']}")
+        st.subheader(f"{row['title']} · {row['status']}")
+        st.write(row["rationale"])
+        st.write("Scope not evidenced:", row["missing_scope"] or "No specific missing scope identified.")
+        st.write("Uncertainty:", row["uncertainty"])
         st.write(row["definition"] or "Framework definition not recorded.")
         st.write(row["proficiency_description"] or "Required proficiency description not recorded.")
         st.json(row)
-matched_indexes = {i for row in rows for i in row["matched_profile_indexes"]}
-st.write("Profile skills without a confirmed requirement mapping:",
-         ", ".join(s["name"] for i, s in enumerate(skills) if i not in matched_indexes) or "(none)")
 report = {"prototype": True, "profile": profile, "role_id": role_id,
           "role_title": role["role_title"], "sector": role["sector"], "track": role["track"],
+          "analysis_method": "langchain_openai", "model": model, "prompt_version": PROMPT_VERSION,
           "role_source_records": recorded["source_records"], "counts": counts,
           "proficiency_status": "not_assessed", "requirements": rows,
-          "disclaimer": "Self-reported skill coverage only; not listed does not prove a missing skill."}
-st.download_button("Download coverage report JSON", json.dumps(report, indent=2, default=str),
-                   file_name="prototype-skill-coverage.json", mime="application/json")
+          "disclaimer": "LLM-inferred coverage and potential gaps, not verified competence or readiness."}
+st.download_button("Download gap report JSON", json.dumps(report, indent=2, default=str),
+                   file_name="prototype-skill-gaps.json", mime="application/json")
 with st.expander("Full current state (prototype)"):
     st.json(report, expanded=False)

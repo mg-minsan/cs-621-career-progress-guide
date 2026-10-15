@@ -1,3 +1,4 @@
 -r ../requirements.txt
-numpy>=2,<3
 streamlit>=1.49,<2
+langchain-openai>=1,<2
+pydantic>=2.7,<3
