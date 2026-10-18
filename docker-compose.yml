@@ -1,0 +1,14 @@
+# docker compose up --build      -> app on http://localhost:8501
+# docker compose run --rm app pytest -q                      -> run the tests
+# docker compose run --rm app python src/run_evals.py --quick  -> evals (needs the API key)
+services:
+  app:
+    build: .
+    image: career-guide:latest
+    ports:
+      - "8501:8501"
+    env_file:
+      - path: .env          # your ANTHROPIC_API_KEY lives here (copy .env.example to .env)
+        required: false     # no .env? the app still runs in "Offline demo" mode
+    volumes:
+      - ./results:/app/results   # eval reports are written back to your folder

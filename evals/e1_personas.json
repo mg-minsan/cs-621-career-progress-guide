@@ -1,0 +1,387 @@
+{
+ "_about": "E1 personas. TEAM: fill every 'labels' block BEFORE running the agent on these profiles (no contamination). Use the Skills Framework sector guides' career-pathway pages as your source and write the page in 'source'.",
+ "_how_to_fill": {
+  "current_role_id": "the framework role this person is in. Find ids with: py src/find_role_id.py \"<title>\"",
+  "acceptable_path_ids": "2-6 role ids that are REALISTIC next steps (from the sector guide career maps, or agreed by two of you)",
+  "must_not_path_ids": "role ids that would be clearly wrong to suggest (e.g. a sales role for an accountant). Can be empty.",
+  "goal_achievable": "true if the stated goal exists in the framework, false if not (p12), 'n/a' if no goal",
+  "source": "e.g. 'Accountancy sector guide, career pathway p.12' or 'team judgement: A and B agreed'"
+ },
+ "_how_graded": "PASS if (1) the agent's current role suggestion equals current_role_id, (2) at least one suggested path is in acceptable_path_ids, (3) no suggested path is in must_not_path_ids, (4) if goal_achievable is true, a goal_match path is shown; if false, the agent says the goal is not in the framework.",
+ "_note_hard_cases": "p10 and p11: simple name matching fails here ('Human Resource Executive' matches Chief Human Resource Officer at 0.64; 'Food and Beverage Supervisor' matches Freight Supervisor). These test whether Claude reads the shortlist sensibly and whether the user checkpoint catches it.",
+ "personas": [
+  {
+   "id": "p01",
+   "tags": [
+    "goal",
+    "switch",
+    "mid_career"
+   ],
+   "profile": {
+    "role": "Accounts Executive",
+    "age": 41,
+    "residency": "citizen",
+    "status": "retrenched",
+    "goal": "move into data analyst"
+   },
+   "labels": {
+    "current_role_id": 14,
+    "current_role_alternatives": [],
+    "acceptable_path_ids": [
+     13,
+     15,
+     723,
+     1226
+    ],
+    "must_not_path_ids": [
+     16,
+     19
+    ],
+    "goal_achievable": true,
+    "source": "auto-v1: framework seniority ladder (src/e1_auto_labels.py)"
+   }
+  },
+  {
+   "id": "p02",
+   "tags": [
+    "no_goal",
+    "step_up"
+   ],
+   "profile": {
+    "role": "Accounts Executive",
+    "age": 29,
+    "residency": "citizen",
+    "status": "employed"
+   },
+   "labels": {
+    "current_role_id": 14,
+    "current_role_alternatives": [],
+    "acceptable_path_ids": [
+     13,
+     15
+    ],
+    "must_not_path_ids": [
+     16,
+     19
+    ],
+    "goal_achievable": "n/a",
+    "source": "auto-v1: framework seniority ladder (src/e1_auto_labels.py)"
+   }
+  },
+  {
+   "id": "p03",
+   "tags": [
+    "goal",
+    "mid_career"
+   ],
+   "profile": {
+    "role": "Bank Teller",
+    "age": 45,
+    "residency": "citizen",
+    "status": "retrenched",
+    "goal": "move into a client relationship role"
+   },
+   "labels": {
+    "current_role_id": 956,
+    "current_role_alternatives": [],
+    "acceptable_path_ids": [
+     935,
+     955,
+     969,
+     996,
+     1000
+    ],
+    "must_not_path_ids": [
+     968
+    ],
+    "goal_achievable": true,
+    "source": "auto-v1: framework seniority ladder (src/e1_auto_labels.py)"
+   }
+  },
+  {
+   "id": "p04",
+   "tags": [
+    "no_goal",
+    "ambiguous_sector"
+   ],
+   "profile": {
+    "role": "Customer Service Executive",
+    "age": 33,
+    "residency": "pr",
+    "status": "employed"
+   },
+   "labels": {
+    "current_role_id": 566,
+    "current_role_alternatives": [],
+    "acceptable_path_ids": [
+     567,
+     569
+    ],
+    "must_not_path_ids": [
+     533,
+     561,
+     564,
+     568,
+     571,
+     572,
+     573
+    ],
+    "goal_achievable": "n/a",
+    "source": "auto-v1: framework seniority ladder (src/e1_auto_labels.py)"
+   }
+  },
+  {
+   "id": "p05",
+   "tags": [
+    "goal",
+    "ai_upskilling"
+   ],
+   "profile": {
+    "role": "Software Engineer",
+    "age": 35,
+    "residency": "citizen",
+    "status": "employed",
+    "goal": "become an AI engineer"
+   },
+   "labels": {
+    "current_role_id": 1315,
+    "current_role_alternatives": [],
+    "acceptable_path_ids": [
+     1221,
+     1222,
+     1229,
+     1231,
+     1309,
+     1316,
+     1320
+    ],
+    "must_not_path_ids": [
+     1225,
+     1244,
+     1343
+    ],
+    "goal_achievable": true,
+    "source": "auto-v1: framework seniority ladder (src/e1_auto_labels.py)"
+   }
+  },
+  {
+   "id": "p06",
+   "tags": [
+    "goal",
+    "ambiguous_sector"
+   ],
+   "profile": {
+    "role": "Marketing Executive",
+    "age": 27,
+    "residency": "citizen",
+    "status": "employed",
+    "goal": "become a digital marketing manager"
+   },
+   "labels": {
+    "current_role_id": 1299,
+    "current_role_alternatives": [
+     1530,
+     1691,
+     1899,
+     1998
+    ],
+    "acceptable_path_ids": [
+     1180,
+     1298,
+     1300,
+     1522,
+     1531,
+     1690,
+     1692,
+     1898,
+     1900,
+     1996,
+     1999
+    ],
+    "must_not_path_ids": [
+     1297,
+     1518,
+     1523,
+     1704
+    ],
+    "goal_achievable": true,
+    "source": "auto-v1: framework seniority ladder (src/e1_auto_labels.py)"
+   }
+  },
+  {
+   "id": "p07",
+   "tags": [
+    "no_goal",
+    "older_worker"
+   ],
+   "profile": {
+    "role": "Security Officer",
+    "age": 52,
+    "residency": "citizen",
+    "status": "employed"
+   },
+   "labels": {
+    "current_role_id": 1795,
+    "current_role_alternatives": [],
+    "acceptable_path_ids": [
+     1796,
+     1797
+    ],
+    "must_not_path_ids": [
+     1794,
+     1798
+    ],
+    "goal_achievable": "n/a",
+    "source": "auto-v1: framework seniority ladder (src/e1_auto_labels.py)"
+   }
+  },
+  {
+   "id": "p08",
+   "tags": [
+    "goal",
+    "switch",
+    "pr"
+   ],
+   "profile": {
+    "role": "Logistics Coordinator",
+    "age": 38,
+    "residency": "pr",
+    "status": "retrenched",
+    "goal": "move into data analyst"
+   },
+   "labels": {
+    "current_role_id": 1436,
+    "current_role_alternatives": [],
+    "acceptable_path_ids": [
+     723,
+     1226,
+     1433,
+     1437
+    ],
+    "must_not_path_ids": [
+     1389,
+     1430,
+     1435
+    ],
+    "goal_achievable": true,
+    "source": "auto-v1: framework seniority ladder (src/e1_auto_labels.py)"
+   }
+  },
+  {
+   "id": "p09",
+   "tags": [
+    "no_goal",
+    "mid_career"
+   ],
+   "profile": {
+    "role": "Production Technician",
+    "age": 44,
+    "residency": "citizen",
+    "status": "retrenched"
+   },
+   "labels": {
+    "current_role_id": 312,
+    "current_role_alternatives": [],
+    "acceptable_path_ids": [
+     309,
+     310
+    ],
+    "must_not_path_ids": [
+     308,
+     311
+    ],
+    "goal_achievable": "n/a",
+    "source": "auto-v1: framework seniority ladder (src/e1_auto_labels.py)"
+   }
+  },
+  {
+   "id": "p10",
+   "tags": [
+    "goal",
+    "hard_mapping"
+   ],
+   "profile": {
+    "role": "Human Resource Executive",
+    "age": 31,
+    "residency": "citizen",
+    "status": "employed",
+    "goal": "become an HR business partner"
+   },
+   "labels": {
+    "current_role_id": 1195,
+    "current_role_alternatives": [
+     1201,
+     1205
+    ],
+    "acceptable_path_ids": [
+     1186,
+     1187,
+     1196,
+     1197,
+     1199,
+     1202,
+     1203
+    ],
+    "must_not_path_ids": [
+     1189,
+     1193
+    ],
+    "goal_achievable": true,
+    "source": "auto-v1: framework seniority ladder (src/e1_auto_labels.py)"
+   }
+  },
+  {
+   "id": "p11",
+   "tags": [
+    "goal",
+    "hard_mapping"
+   ],
+   "profile": {
+    "role": "Food and Beverage Supervisor",
+    "age": 26,
+    "residency": "citizen",
+    "status": "employed",
+    "goal": "become a restaurant manager"
+   },
+   "labels": {
+    "current_role_id": 1056,
+    "current_role_alternatives": [],
+    "acceptable_path_ids": [
+     1058,
+     1059
+    ],
+    "must_not_path_ids": [],
+    "goal_achievable": true,
+    "source": "auto-v1: framework seniority ladder (src/e1_auto_labels.py)"
+   }
+  },
+  {
+   "id": "p12",
+   "tags": [
+    "goal",
+    "no_answer"
+   ],
+   "profile": {
+    "role": "Accounts Executive",
+    "age": 40,
+    "residency": "citizen",
+    "status": "employed",
+    "goal": "become an astronaut"
+   },
+   "labels": {
+    "current_role_id": 14,
+    "current_role_alternatives": [],
+    "acceptable_path_ids": [
+     13,
+     15
+    ],
+    "must_not_path_ids": [
+     16,
+     19
+    ],
+    "goal_achievable": false,
+    "source": "auto-v1: framework seniority ladder (src/e1_auto_labels.py)"
+   }
+  }
+ ]
+}
