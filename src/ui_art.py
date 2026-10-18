@@ -211,7 +211,8 @@ section[data-testid="stSidebar"] {{background: #ece6da; border-right: 1.5px soli
   display:flex; align-items:center; justify-content:center; position:relative; transition: transform .2s;}}
 .rm-step.now .rm-badge {{background: {TEAL_SOFT}; border: 3px solid {TEAL_DARK}; transform: scale(1.15);
   box-shadow: 0 0 0 6px rgba(106,168,182,.25);}}
-.rm-step.todo .rm-badge {{filter: grayscale(.8); opacity:.6;}}
+.rm-step.todo .rm-badge {{background: {CREAM}; border-color: #8b8d8c;}}
+.rm-step.todo .rm-badge img {{filter: grayscale(.8); opacity:.6;}}
 .rm-tick {{position:absolute; right:-4px; bottom:-2px; background:{TEAL_DARK}; color:#fff; border:2px solid {CREAM};
   width:23px; height:23px; border-radius:50%; font-size:13px; font-weight:800; line-height:19px;}}
 .rm-label {{margin-top:9px; font-weight:800; font-size:.84rem; color:{NAVY};}}

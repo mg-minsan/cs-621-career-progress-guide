@@ -10,6 +10,7 @@ Tools must fail LOUDLY. A wrong role id raises ToolError with
 the valid options, instead of quietly returning an empty list.
 """
 from difflib import SequenceMatcher
+from functools import lru_cache
 from pathlib import Path
 import re
 import sqlite3
@@ -123,6 +124,30 @@ def get_role(role_id: int) -> dict:
     if row is None:
         raise ToolError(f"No role with id {role_id}. Use find_roles to get a valid id.")
     return dict(row)
+
+
+@lru_cache(maxsize=1)
+def _framework_role_tasks() -> dict[tuple[str, str, str], list[str]]:
+    """Load official tasks once; the existing database does not store this sheet."""
+    import pandas as pd
+
+    path = DB.parent / "raw" / "jobsandskills-skillsfuture-skills-framework-dataset.xlsx"
+    if not path.exists():
+        return {}
+    rows = pd.read_excel(path, sheet_name="Job Role_CWF_KT",
+                         usecols=["Sector", "Track", "Job Role", "Key Tasks"]).fillna("")
+    tasks: dict[tuple[str, str, str], list[str]] = {}
+    for sector, track, role, task in rows.itertuples(index=False, name=None):
+        task = str(task).strip()
+        items = tasks.setdefault((sector, track, role), [])
+        if task and task not in items:
+            items.append(task)
+    return tasks
+
+
+def get_role_tasks(role_id: int) -> list[str]:
+    role = get_role(role_id)
+    return list(_framework_role_tasks().get((role["sector"], role["track"], role["role"]), []))
 
 
 # --------------------------------------------------------------------------

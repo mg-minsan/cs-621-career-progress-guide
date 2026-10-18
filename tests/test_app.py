@@ -31,6 +31,16 @@ def test_all_three_checkpoints_then_refresh_resumes():
     assert at.subheader[0].value.startswith("Where would you")         # choose_path
     btn(at, "Plan this path").click().run()
     assert "→" in at.subheader[0].value                                # approve_plan
+    assert any(c.value == "Source: SkillsFuture Skills Framework" for c in at.caption)
+    assert not any("No framework description" in c.value for c in at.caption)
+    assert any(m.value == "**Tasks include:**" for m in at.markdown)
+    task_count = lambda: sum(line.startswith("- ") for m in at.markdown for line in m.value.splitlines())
+    preview_tasks = task_count()
+    assert preview_tasks == 3
+    btn(at, "Show more").click().run()
+    assert task_count() > preview_tasks
+    btn(at, "Show less").click().run()
+    assert task_count() == preview_tasks
     btn(at, "Approve plan").click().run()
     assert "You approved this plan" in at.success[0].value
     tid = at.query_params["thread"]
