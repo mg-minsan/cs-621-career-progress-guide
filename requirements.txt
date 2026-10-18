@@ -13,6 +13,7 @@ langchain==1.4.5
 langchain-core==1.6.10
 langgraph==1.2.15
 langchain-anthropic==1.7.6
+langchain-deepseek==1.1.1
 anthropic==1.13.0
 
 # course search (BM25 + embeddings + re-ranker)

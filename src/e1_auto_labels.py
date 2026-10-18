@@ -182,6 +182,7 @@ def label(p: dict) -> dict:
             "current_role_alternatives": [c for c in cur if c != primary],
             "acceptable_path_ids": sorted(ok),
             "must_not_path_ids": sorted(bad),
+            "role_names": {str(rid): ROLES[rid]["role"] for rid in sorted(set(cur) | ok | bad)},
             "goal_achievable": (bool(goals) if prof.get("goal") else "n/a"),
             "source": SOURCE,
             "_why": {str(k): v for k, v in why.items()}}

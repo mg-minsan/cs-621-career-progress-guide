@@ -5,7 +5,8 @@
   "acceptable_path_ids": "2-6 role ids that are REALISTIC next steps (from the sector guide career maps, or agreed by two of you)",
   "must_not_path_ids": "role ids that would be clearly wrong to suggest (e.g. a sales role for an accountant). Can be empty.",
   "goal_achievable": "true if the stated goal exists in the framework, false if not (p12), 'n/a' if no goal",
-  "source": "e.g. 'Accountancy sector guide, career pathway p.12' or 'team judgement: A and B agreed'"
+  "source": "e.g. 'Accountancy sector guide, career pathway p.12' or 'team judgement: A and B agreed'",
+  "role_names": "Read-only ID-to-role-name reference from data/careers.db. Grading uses the ID fields; refresh names if IDs change."
  },
  "_how_graded": "PASS if (1) the agent's current role suggestion equals current_role_id, (2) at least one suggested path is in acceptable_path_ids, (3) no suggested path is in must_not_path_ids, (4) if goal_achievable is true, a goal_match path is shown; if false, the agent says the goal is not in the framework.",
  "_note_hard_cases": "p10 and p11: simple name matching fails here ('Human Resource Executive' matches Chief Human Resource Officer at 0.64; 'Food and Beverage Supervisor' matches Freight Supervisor). These test whether Claude reads the shortlist sensibly and whether the user checkpoint catches it.",
@@ -37,6 +38,15 @@
      16,
      19
     ],
+    "role_names": {
+     "13": "Accountant / Senior Accounts Executive",
+     "14": "Accounts Executive / Accounts Assistant",
+     "15": "Finance Manager",
+     "16": "Financial Controller",
+     "19": "Chief Financial Officer",
+     "723": "Data Analyst",
+     "1226": "Data Analyst / Associate Data Engineer"
+    },
     "goal_achievable": true,
     "source": "auto-v1: framework seniority ladder (src/e1_auto_labels.py)"
    }
@@ -64,6 +74,13 @@
      16,
      19
     ],
+    "role_names": {
+     "13": "Accountant / Senior Accounts Executive",
+     "14": "Accounts Executive / Accounts Assistant",
+     "15": "Finance Manager",
+     "16": "Financial Controller",
+     "19": "Chief Financial Officer"
+    },
     "goal_achievable": "n/a",
     "source": "auto-v1: framework seniority ladder (src/e1_auto_labels.py)"
    }
@@ -94,6 +111,15 @@
     "must_not_path_ids": [
      968
     ],
+    "role_names": {
+     "935": "Assistant Relationship Manager / Relationship Associate",
+     "955": "Customer Service Manager",
+     "956": "Customer Service Officer / Bank Teller",
+     "968": "Head of Client Service / Client Support Services Director",
+     "969": "Head of Customer Service",
+     "996": "Relationship Manager - Commercial",
+     "1000": "Relationship Manager - Retail Banking / Personal Banking Manager"
+    },
     "goal_achievable": true,
     "source": "auto-v1: framework seniority ladder (src/e1_auto_labels.py)"
    }
@@ -126,6 +152,18 @@
      572,
      573
     ],
+    "role_names": {
+     "533": "Chief Executive Officer / Chief Operating Officer / Managing Director / General Manager / President",
+     "561": "Business-to-Business Sales and Key Accounts Manager",
+     "564": "Business-to-Customer Sales Manager",
+     "566": "Customer Service Executive",
+     "567": "Customer Service Senior Executive",
+     "568": "Customer Service, Billing and Settlement Department Manager",
+     "569": "Customer Service, Billing and Settlement Manager",
+     "571": "Demand Management Manager",
+     "572": "Demand Management, Business-to-Business Sales and Key Accounts, Business-to-Customer Sales and Marketing Department Manager",
+     "573": "Marketing Manager"
+    },
     "goal_achievable": "n/a",
     "source": "auto-v1: framework seniority ladder (src/e1_auto_labels.py)"
    }
@@ -160,6 +198,19 @@
      1244,
      1343
     ],
+    "role_names": {
+     "1221": "Artificial Intelligence / Machine Learning Engineer",
+     "1222": "Artificial Intelligence Applied Researcher",
+     "1225": "Chief Data Officer / Chief Artificial Intelligence Officer",
+     "1229": "Data Scientist / Artificial Intelligence Scientist",
+     "1231": "Senior Artificial Intelligence / Machine Learning Engineer",
+     "1244": "Chief Information Officer",
+     "1309": "DevOps Engineer",
+     "1315": "Software Engineer",
+     "1316": "Software Engineering Manager",
+     "1320": "Business Analyst / Artificial Intelligence Translator",
+     "1343": "Chief Technology Officer"
+    },
     "goal_achievable": true,
     "source": "auto-v1: framework seniority ladder (src/e1_auto_labels.py)"
    }
@@ -204,6 +255,28 @@
      1523,
      1704
     ],
+    "role_names": {
+     "1180": "Marketing Communications Manager / Digital Marketing Manager / Public Relations Manager / Assistant Marketing Communications Manager / Assistant Digital Marketing Manager / Assistant Public Relations Manager",
+     "1297": "Head of Sales",
+     "1298": "Marketing Director",
+     "1299": "Marketing Executive",
+     "1300": "Marketing Manager",
+     "1518": "Head - Content",
+     "1522": "Head of Marketing / Marketing Director",
+     "1523": "Head of Sales / Sales Director",
+     "1530": "Marketing Executive",
+     "1531": "Marketing Manager",
+     "1690": "Marketing Director",
+     "1691": "Marketing Executive",
+     "1692": "Marketing Manager",
+     "1704": "Chief Executive Officer / Chief Operating Officer / Managing Director / Country Manager",
+     "1898": "Marketing Director",
+     "1899": "Marketing Executive",
+     "1900": "Marketing Manager",
+     "1996": "Head of Marketing",
+     "1998": "Marketing Executive",
+     "1999": "Marketing Manager"
+    },
     "goal_achievable": true,
     "source": "auto-v1: framework seniority ladder (src/e1_auto_labels.py)"
    }
@@ -231,6 +304,13 @@
      1794,
      1798
     ],
+    "role_names": {
+     "1794": "Chief Security Officer",
+     "1795": "Security Officer",
+     "1796": "Security Supervisor",
+     "1797": "Senior Security Officer",
+     "1798": "Senior Security Supervisor"
+    },
     "goal_achievable": "n/a",
     "source": "auto-v1: framework seniority ladder (src/e1_auto_labels.py)"
    }
@@ -263,6 +343,16 @@
      1430,
      1435
     ],
+    "role_names": {
+     "723": "Data Analyst",
+     "1226": "Data Analyst / Associate Data Engineer",
+     "1389": "Chief Executive Officer / Chief Operating Officer / Managing Director / General Manager",
+     "1430": "Health, Safety and Environmental Manager",
+     "1433": "Warehouse Officer / Inventory Controller / Quality Control Officer / Warehouse Facilities Management Officer",
+     "1435": "Warehouse Operations Manager / Inventory Management Manager / Capacity Management Manager",
+     "1436": "Warehouse Storekeeper / Inventory Coordinator / Logistics Coordinator",
+     "1437": "Warehouse Supervisor / Inventory Control Supervisor / Quality Control Supervisor"
+    },
     "goal_achievable": true,
     "source": "auto-v1: framework seniority ladder (src/e1_auto_labels.py)"
    }
@@ -290,6 +380,13 @@
      308,
      311
     ],
+    "role_names": {
+     "308": "Production Director",
+     "309": "Production Engineer / Biotechnologist",
+     "310": "Production Executive",
+     "311": "Production Manager",
+     "312": "Production Senior Technician / Production Technician / Assistant Biotechnologist"
+    },
     "goal_achievable": "n/a",
     "source": "auto-v1: framework seniority ladder (src/e1_auto_labels.py)"
    }
@@ -326,6 +423,20 @@
      1189,
      1193
     ],
+    "role_names": {
+     "1186": "Manager, Employee Experience and Relations",
+     "1187": "HR Business Partner / HR Manager",
+     "1189": "Head, Learning and Organisation Development",
+     "1193": "Chief Human Resource Officer",
+     "1195": "Executive, Performance and Rewards",
+     "1196": "Head, Performance and Rewards",
+     "1197": "Manager, Performance and Rewards",
+     "1199": "Manager, Talent Attraction",
+     "1201": "Executive, Talent Attraction and Employee Experience and Relations",
+     "1202": "Head, Talent Management",
+     "1203": "Manager, Talent Management",
+     "1205": "Executive, Talent Management and Learning and Organisational Development"
+    },
     "goal_achievable": true,
     "source": "auto-v1: framework seniority ladder (src/e1_auto_labels.py)"
    }
@@ -351,6 +462,11 @@
      1059
     ],
     "must_not_path_ids": [],
+    "role_names": {
+     "1056": "Executive / Service Supervisor",
+     "1058": "Multi-Outlet Manager",
+     "1059": "Outlet Manager / Assistant Outlet Manager"
+    },
     "goal_achievable": true,
     "source": "auto-v1: framework seniority ladder (src/e1_auto_labels.py)"
    }
@@ -379,6 +495,13 @@
      16,
      19
     ],
+    "role_names": {
+     "13": "Accountant / Senior Accounts Executive",
+     "14": "Accounts Executive / Accounts Assistant",
+     "15": "Finance Manager",
+     "16": "Financial Controller",
+     "19": "Chief Financial Officer"
+    },
     "goal_achievable": false,
     "source": "auto-v1: framework seniority ladder (src/e1_auto_labels.py)"
    }
