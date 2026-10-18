@@ -31,7 +31,7 @@ import os
 from course_search import CourseIndex, find_courses_for_skill
 from funding import FundingError, Person, course_cost, credit_entitlement, infer_tier, plan_cost
 from plan_rules import check_plan, choose_course, code_order, match_quality, split_phases, validate_order
-from lookups import ToolError, get_role, nearby_roles, search_roles, skill_description, skill_gap
+from lookups import ToolError, get_role, get_role_tasks, nearby_roles, search_roles, skill_description, skill_gap
 
 RESIDENCY_ALIASES = {"citizen": "citizen", "sc": "citizen", "singaporean": "citizen",
                      "singapore citizen": "citizen", "pr": "pr", "spr": "pr",
@@ -287,8 +287,11 @@ def plan(state: State) -> dict:
     cost = plan_cost(Person(p["residency"], p["age"], p.get("credit_balance")),
                      [c.get("your_fee") for c in chosen])
     new = sum(1 for g in state["gaps"] if g["status"] == "missing")
+    target_role = get_role(state["target_role_id"])
     result = {"current_role": get_role(state["current_role_id"])["role"],
-              "target_role": get_role(state["target_role_id"])["role"],
+              "target_role": target_role["role"],
+              "target_role_description": target_role.get("description") or "",
+              "target_role_tasks": get_role_tasks(state["target_role_id"]),
               "gap_summary": {"new_skills": new, "level_ups": len(state["gaps"]) - new},
               "phases": phases, "cost": cost,
               "total_hours": round(sum(c.get("hours") or 0 for c in chosen), 1)}

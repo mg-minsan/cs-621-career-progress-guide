@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import sys
 import uuid
 from pathlib import Path
@@ -283,6 +284,54 @@ elif where == "approve_plan":
     gs, c = plan["gap_summary"], plan["cost"]
     heading("approve_plan", f"{plan['current_role']}  →  {plan['target_role']}",
             "Your plan, in three phases. Check it, then approve or say no.")
+    # Keep review styling here so a page rerun picks up changes even when the
+    # imported theme module is still cached in the running Streamlit process.
+    html(f"""<style>
+    div.st-key-target_role_about {{
+        background: {art.TEAL_SOFT} !important; color: {art.NAVY};
+        border: 1px solid {art.TEAL_UI}; border-radius: 18px;
+        padding: 20px 24px; margin-bottom: 16px;
+        width: 100%; box-sizing: border-box;
+    }}
+    div.st-key-target_role_about [data-testid="stMarkdownContainer"] {{
+        width: 100% !important; max-width: none !important;
+    }}
+    div.st-key-target_role_about [data-testid="stMarkdownContainer"] p,
+    div.st-key-target_role_about [data-testid="stMarkdownContainer"] li {{
+        font-size: .95rem; line-height: 1.65;
+    }}
+    div.st-key-target_role_about [data-testid="stMarkdownContainer"] li {{margin-bottom: .3rem;}}
+    div.st-key-target_role_about [data-testid="stMarkdownContainer"] li p {{margin-bottom: 0;}}
+    </style>""")
+    with st.container(key="target_role_about"):
+        st.markdown("**About your target role**")
+        details_key = f"role_details_{thread}"
+        expanded = st.session_state.get(details_key, False)
+        description = (plan.get("target_role_description") or "").strip()
+        # Plans already paused at review may predate the description field.
+        if not description and values.get("target_role_id") is not None:
+            description = (g.get_role(values["target_role_id"]).get("description") or "").strip()
+        if description:
+            sentences = re.split(r"(?<=[.!?])\s+(?=[A-Z])", description)
+            shown = sentences if expanded else sentences[:2]
+            # Short paragraphs keep the full description readable when expanded.
+            st.markdown("\n\n".join(" ".join(shown[i:i + 3]) for i in range(0, len(shown), 3)))
+        else:
+            st.caption("No framework description is available for this role.")
+        tasks = plan.get("target_role_tasks")
+        if tasks is None and values.get("target_role_id") is not None:
+            from lookups import get_role_tasks
+            tasks = get_role_tasks(values["target_role_id"])
+        if tasks:
+            st.markdown("**Tasks include:**")
+            shown_tasks = tasks if expanded else tasks[:3]
+            st.markdown("\n".join(f"- {' '.join(task.split())}" for task in shown_tasks))
+        if (description and len(sentences) > 2) or (tasks and len(tasks) > 3):
+            st.button("Show less" if expanded else "Show more",
+                      key=f"toggle_{details_key}",
+                      on_click=lambda: st.session_state.__setitem__(details_key, not expanded))
+        if description or tasks:
+            st.caption("Source: SkillsFuture Skills Framework")
     html(art.tiles_html([
         ("skills", "Skills to gain", str(gs["new_skills"] + gs["level_ups"]),
          f"{gs['new_skills']} new · {gs['level_ups']} level-ups"),
