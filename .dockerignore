@@ -1,0 +1,25 @@
+# never put secrets in the image
+.env
+*.key
+claude_api_key.txt
+
+# rebuilt inside the image from data/raw (data/index is kept: it saves a 20-min step)
+data/careers.db
+
+# not needed to run the app
+.git/
+.github/
+__pycache__/
+**/__pycache__/
+.pytest_cache/
+**/.pytest_cache/
+.venv/
+venv/
+results*/
+labels/
+*.zip
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+~$*

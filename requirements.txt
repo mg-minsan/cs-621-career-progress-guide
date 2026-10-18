@@ -1,0 +1,27 @@
+# Career Progress Guide - pinned versions (tested together, Python 3.12/3.13)
+# Docker installs the CPU-only build of torch first (see Dockerfile), so the
+# image stays small. On your own machine, `pip install -r requirements.txt` is enough.
+
+# data + tools
+pandas==3.0.5
+numpy==2.5.3
+openpyxl==3.1.5
+pydantic==2.13.5
+
+# agent
+langchain==1.4.5
+langchain-core==1.6.10
+langgraph==1.2.15
+langchain-anthropic==1.7.6
+anthropic==1.13.0
+
+# course search (BM25 + embeddings + re-ranker)
+rank-bm25==0.2.2
+sentence-transformers==6.1.0
+torch==2.14.1
+
+# app
+streamlit==1.66.0
+
+# tests
+pytest==9.1.1

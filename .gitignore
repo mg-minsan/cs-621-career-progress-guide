@@ -1,0 +1,22 @@
+# ---- secrets: never commit ----
+.env
+*.key
+claude_api_key.txt
+
+# ---- generated: rebuilt from data/raw by src/data_prep.py (101 MB, too big for GitHub) ----
+# data/index/ IS committed (39 MB): it saves everyone the 20-min embedding step
+data/careers.db
+
+# ---- Python ----
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+
+# ---- editors / OS / Office lock files ----
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+~$*

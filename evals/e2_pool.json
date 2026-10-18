@@ -1,0 +1,1643 @@
+{
+ "modes": [
+  "bm25",
+  "dense",
+  "hybrid",
+  "hybrid_rerank"
+ ],
+ "top_k": 5,
+ "skills": {
+  "Data Collection and Analysis": [
+   {
+    "course_ref": "TGS-2025057586",
+    "title": "Trisector Strategy and Innovation for Transformation (Data Collection and Analysis)",
+    "provider": "NATIONAL UNIVERSITY OF SINGAPORE",
+    "found_by": {
+     "bm25": 1
+    }
+   },
+   {
+    "course_ref": "TGS-2025058392",
+    "title": "Data Collection and Analysis",
+    "provider": "SINGAPORE MANAGEMENT UNIVERSITY",
+    "found_by": {
+     "bm25": 2
+    }
+   },
+   {
+    "course_ref": "TGS-2026066409",
+    "title": "Applied Machine Learning - From Data to Deployment",
+    "provider": "ST ENGINEERING E-SERVICES PTE. LTD.",
+    "found_by": {
+     "bm25": 3
+    }
+   },
+   {
+    "course_ref": "TGS-2026062725",
+    "title": "AI Empowerment for Admin & HR Professionals",
+    "provider": "NSIT TRAINING PTE. LTD.",
+    "found_by": {
+     "bm25": 4
+    }
+   },
+   {
+    "course_ref": "TGS-2024052158",
+    "title": "Advanced Certificate in Data Analytics in Digital Economy Module 2: Data Collection and Preprocessing Techniques",
+    "provider": "SINGAPORE MANAGEMENT UNIVERSITY",
+    "found_by": {
+     "bm25": 5,
+     "hybrid_rerank": 4
+    }
+   },
+   {
+    "course_ref": "TGS-2021007528",
+    "title": "Data Collection and Analysis (in MC in Decision Analysis in Part-time Diploma in Engineering (Operations & Systems Management))",
+    "provider": "Temasek Polytechnic",
+    "found_by": {
+     "dense": 1,
+     "hybrid": 1
+    }
+   },
+   {
+    "course_ref": "TGS-2018509511",
+    "title": "Statistics and Data Analysis",
+    "provider": "Singapore University of Social Sciences",
+    "found_by": {
+     "dense": 2
+    }
+   },
+   {
+    "course_ref": "TGS-2023037380",
+    "title": "Analysing & Presenting Digital Analytics",
+    "provider": "SINGAPORE UNIVERSITY OF SOCIAL SCIENCES",
+    "found_by": {
+     "dense": 3,
+     "hybrid": 3
+    }
+   },
+   {
+    "course_ref": "TGS-2025056142",
+    "title": "Collection Methods for Child and Adolescent Data",
+    "provider": "NATIONAL UNIVERSITY OF SINGAPORE",
+    "found_by": {
+     "dense": 4
+    }
+   },
+   {
+    "course_ref": "TGS-2026061473",
+    "title": "Survey Analytics",
+    "provider": "NATIONAL UNIVERSITY OF SINGAPORE",
+    "found_by": {
+     "dense": 5
+    }
+   },
+   {
+    "course_ref": "TGS-2023019068",
+    "title": "Data Visualisation and Analysis",
+    "provider": "Republic Polytechnic",
+    "found_by": {
+     "hybrid": 2,
+     "hybrid_rerank": 3
+    }
+   },
+   {
+    "course_ref": "TGS-2020503227",
+    "title": "Qualitative Data Analysis: Theory and Practice",
+    "provider": "NATIONAL UNIVERSITY OF SINGAPORE",
+    "found_by": {
+     "hybrid": 4
+    }
+   },
+   {
+    "course_ref": "TGS-2020513727",
+    "title": "Customer Behaviour Analysis",
+    "provider": "ALL HEARTS PTE. LTD.",
+    "found_by": {
+     "hybrid": 5
+    }
+   },
+   {
+    "course_ref": "TGS-2025058393",
+    "title": "Data Collection and Analysis (Synchronous E-Learning)",
+    "provider": "SINGAPORE MANAGEMENT UNIVERSITY",
+    "found_by": {
+     "hybrid_rerank": 1
+    }
+   },
+   {
+    "course_ref": "TGS-2024046837",
+    "title": "Trisector Strategy and Innovation for Transformation (Data Collection and Analysis)",
+    "provider": "NATIONAL UNIVERSITY OF SINGAPORE",
+    "found_by": {
+     "hybrid_rerank": 2
+    }
+   },
+   {
+    "course_ref": "TGS-2024050644",
+    "title": "Using Data to Support Organisational Change",
+    "provider": "Singapore University of Social Sciences",
+    "found_by": {
+     "hybrid_rerank": 5
+    }
+   }
+  ],
+  "Data Governance": [
+   {
+    "course_ref": "TGS-2022010707",
+    "title": "Advanced Certificate in Data Governance Systems Module 1: Digital Data Governance Frameworks and Standards",
+    "provider": "SINGAPORE MANAGEMENT UNIVERSITY",
+    "found_by": {
+     "bm25": 1
+    }
+   },
+   {
+    "course_ref": "TGS-2020502992",
+    "title": "Governance Practice in Financial Industry",
+    "provider": "SINGAPORE MANAGEMENT UNIVERSITY",
+    "found_by": {
+     "bm25": 2
+    }
+   },
+   {
+    "course_ref": "TGS-2025058074",
+    "title": "Advanced Certificate in Data Management for Artificial Intelligence, Sustainability, and Data-Driven Innovation Module 6: Data Governance, Privacy and Data Democratisation",
+    "provider": "SINGAPORE MANAGEMENT UNIVERSITY",
+    "found_by": {
+     "bm25": 3
+    }
+   },
+   {
+    "course_ref": "TGS-2023018867",
+    "title": "Data Security & Governance",
+    "provider": "Temasek Polytechnic",
+    "found_by": {
+     "bm25": 4,
+     "hybrid": 4
+    }
+   },
+   {
+    "course_ref": "TGS-2026065152",
+    "title": "Data Management and Governance (SCTP)",
+    "provider": "NATIONAL UNIVERSITY OF SINGAPORE",
+    "found_by": {
+     "bm25": 5
+    }
+   },
+   {
+    "course_ref": "TGS-2025058394",
+    "title": "Data Governance",
+    "provider": "SINGAPORE MANAGEMENT UNIVERSITY",
+    "found_by": {
+     "dense": 1
+    }
+   },
+   {
+    "course_ref": "TGS-2026062406",
+    "title": "Data Governance & Data Security Management  (Synchronous e-Learning)",
+    "provider": "NTUC LEARNINGHUB PTE. LTD.",
+    "found_by": {
+     "dense": 2,
+     "hybrid": 5,
+     "hybrid_rerank": 5
+    }
+   },
+   {
+    "course_ref": "TGS-2025059388",
+    "title": "(SCTP Module) Data Governance, Ethics and Security Management",
+    "provider": "Ngee Ann Polytechnic",
+    "found_by": {
+     "dense": 3
+    }
+   },
+   {
+    "course_ref": "TGS-2020001436",
+    "title": "Data Governance & Protection",
+    "provider": "NATIONAL UNIVERSITY OF SINGAPORE",
+    "found_by": {
+     "dense": 4,
+     "hybrid_rerank": 1
+    }
+   },
+   {
+    "course_ref": "TGS-2025053890",
+    "title": "Data Governance for Data Protection Managers",
+    "provider": "STRAITS INTERACTIVE PTE. LTD.",
+    "found_by": {
+     "dense": 5,
+     "hybrid_rerank": 3
+    }
+   },
+   {
+    "course_ref": "TGS-2021005093",
+    "title": "Data Governance (Classroom and Synchronous)",
+    "provider": "Ngee Ann Polytechnic",
+    "found_by": {
+     "hybrid": 1
+    }
+   },
+   {
+    "course_ref": "TGS-2022010708",
+    "title": "Advanced Certificate in Data Governance Systems Module 1: Digital Data Governance Frameworks and Standards (Synchronous E-Learning)",
+    "provider": "SINGAPORE MANAGEMENT UNIVERSITY",
+    "found_by": {
+     "hybrid": 2
+    }
+   },
+   {
+    "course_ref": "TGS-2025058075",
+    "title": "Advanced Certificate in Data Management for Artificial Intelligence, Sustainability, and Data-Driven Innovation Module 6: Data Governance, Privacy and Data Democratisation (Synchronous E-Learning)",
+    "provider": "SINGAPORE MANAGEMENT UNIVERSITY",
+    "found_by": {
+     "hybrid": 3
+    }
+   },
+   {
+    "course_ref": "TGS-2025058395",
+    "title": "Data Governance (Synchronous E-Learning)",
+    "provider": "SINGAPORE MANAGEMENT UNIVERSITY",
+    "found_by": {
+     "hybrid_rerank": 2
+    }
+   },
+   {
+    "course_ref": "TGS-2025053889",
+    "title": "Hands-on Data Protection Officer (DPO) (Data Governance)",
+    "provider": "STRAITS INTERACTIVE PTE. LTD.",
+    "found_by": {
+     "hybrid_rerank": 4
+    }
+   }
+  ],
+  "Data Storytelling and Visualisation": [
+   {
+    "course_ref": "TGS-2024051151",
+    "title": "Principles of Data Storytelling",
+    "provider": "SINGAPORE UNIVERSITY OF TECHNOLOGY AND DESIGN",
+    "found_by": {
+     "bm25": 1,
+     "dense": 4,
+     "hybrid": 1
+    }
+   },
+   {
+    "course_ref": "TGS-2022602057",
+    "title": "Data Storytelling and Visualisation for Finance Services",
+    "provider": "TERTIARY INFOTECH ACADEMY PTE. LTD.",
+    "found_by": {
+     "bm25": 2,
+     "hybrid": 3
+    }
+   },
+   {
+    "course_ref": "TGS-2025057937",
+    "title": "Data Storytelling",
+    "provider": "NTUC LEARNINGHUB PTE. LTD.",
+    "found_by": {
+     "bm25": 3,
+     "hybrid": 4
+    }
+   },
+   {
+    "course_ref": "TGS-2025052244",
+    "title": "Data Visualisation (in PDC in Data Visualisation & Storytelling of Specialist Diploma in AI-Driven Data Analytics)",
+    "provider": "Temasek Polytechnic",
+    "found_by": {
+     "bm25": 4,
+     "hybrid": 5,
+     "hybrid_rerank": 3
+    }
+   },
+   {
+    "course_ref": "TGS-2021010342",
+    "title": "Data Storytelling with Visualisation",
+    "provider": "SINGAPORE UNIVERSITY OF TECHNOLOGY AND DESIGN",
+    "found_by": {
+     "bm25": 5,
+     "hybrid": 2
+    }
+   },
+   {
+    "course_ref": "TGS-2023025993",
+    "title": "Data Storytelling",
+    "provider": "Temasek Polytechnic",
+    "found_by": {
+     "dense": 1
+    }
+   },
+   {
+    "course_ref": "TGS-2025053855",
+    "title": "Data Storytelling and Data Visualisation (Synchronous E-Learning)",
+    "provider": "AVENTIS GRADUATE SCHOOL PTE. LTD.",
+    "found_by": {
+     "dense": 2,
+     "hybrid_rerank": 1
+    }
+   },
+   {
+    "course_ref": "TGS-2023039927",
+    "title": "Data Storytelling and Visualisation",
+    "provider": "BELLS Institute of Higher Learning Pte. Ltd.",
+    "found_by": {
+     "dense": 3,
+     "hybrid_rerank": 2
+    }
+   },
+   {
+    "course_ref": "TGS-2024046297",
+    "title": "The Data Edge and Visual Story Mastery (Classroom and Asynchronous e-learning)",
+    "provider": "NANYANG TECHNOLOGICAL UNIVERSITY",
+    "found_by": {
+     "dense": 5
+    }
+   },
+   {
+    "course_ref": "TGS-2023037561",
+    "title": "Communicating Data with Impact: Data Storytelling and Visualization",
+    "provider": "SINGAPORE MANAGEMENT UNIVERSITY",
+    "found_by": {
+     "hybrid_rerank": 4
+    }
+   },
+   {
+    "course_ref": "TGS-2023040954",
+    "title": "Data Visualisation and Storytelling - Part of Post Diploma Certificate in Programming for Analytics and Data Visualisation (SDDA1)",
+    "provider": "Ngee Ann Polytechnic",
+    "found_by": {
+     "hybrid_rerank": 5
+    }
+   }
+  ],
+  "Data-mining and Modelling": [
+   {
+    "course_ref": "TGS-2023020765",
+    "title": "Data Mining for Decision Making",
+    "provider": "SINGAPORE UNIVERSITY OF SOCIAL SCIENCES",
+    "found_by": {
+     "bm25": 1,
+     "hybrid": 1,
+     "hybrid_rerank": 4
+    }
+   },
+   {
+    "course_ref": "TGS-2020504604",
+    "title": "Data Mining for Correlation Analysis (DM-LITE)",
+    "provider": "SINGAPORE INSTITUTE OF MANUFACTURING TECHNOLOGY",
+    "found_by": {
+     "bm25": 2
+    }
+   },
+   {
+    "course_ref": "TGS-2024050697",
+    "title": "Business Data Analytics \u5546\u4e1a\u6570\u636e\u5206\u6790",
+    "provider": "Singapore University of Social Sciences",
+    "found_by": {
+     "bm25": 3,
+     "hybrid": 2
+    }
+   },
+   {
+    "course_ref": "TGS-2024044690",
+    "title": "Data Visualisation & Analytics for Social Sector",
+    "provider": "SINGAPORE UNIVERSITY OF SOCIAL SCIENCES",
+    "found_by": {
+     "bm25": 4
+    }
+   },
+   {
+    "course_ref": "TGS-2020504648",
+    "title": "Data-Driven Predictive Maintenance and Optimal Plan",
+    "provider": "SINGAPORE INSTITUTE OF MANUFACTURING TECHNOLOGY",
+    "found_by": {
+     "bm25": 5,
+     "hybrid_rerank": 2
+    }
+   },
+   {
+    "course_ref": "TGS-2023017892",
+    "title": "Financial Data Mining and Modeling with R",
+    "provider": "TERTIARY INFOTECH ACADEMY PTE. LTD.",
+    "found_by": {
+     "dense": 1,
+     "hybrid_rerank": 5
+    }
+   },
+   {
+    "course_ref": "TGS-2020504441",
+    "title": "Analytics and Computational Modelling",
+    "provider": "SINGAPORE POLYTECHNIC",
+    "found_by": {
+     "dense": 2
+    }
+   },
+   {
+    "course_ref": "TGS-2024042920",
+    "title": "Data Mining Techniques",
+    "provider": "SINGAPORE POLYTECHNIC",
+    "found_by": {
+     "dense": 3,
+     "hybrid": 4,
+     "hybrid_rerank": 1
+    }
+   },
+   {
+    "course_ref": "TGS-2020503264",
+    "title": "Data Mining and Machine Learning Fundamentals for Beginners",
+    "provider": "TERTIARY INFOTECH ACADEMY PTE. LTD.",
+    "found_by": {
+     "dense": 4
+    }
+   },
+   {
+    "course_ref": "TGS-2023037338",
+    "title": "   Fundamentals of Data Mining",
+    "provider": "SINGAPORE UNIVERSITY OF SOCIAL SCIENCES",
+    "found_by": {
+     "dense": 5,
+     "hybrid": 3
+    }
+   },
+   {
+    "course_ref": "TGS-2024045802",
+    "title": "AI Vibe Coding for Data Mining and Modeling",
+    "provider": "TERTIARY INFOTECH ACADEMY PTE. LTD.",
+    "found_by": {
+     "hybrid": 5,
+     "hybrid_rerank": 3
+    }
+   }
+  ],
+  "Programming and Coding": [
+   {
+    "course_ref": "TGS-2020504916",
+    "title": "Coding for Beginners",
+    "provider": "Nanyang Polytechnic",
+    "found_by": {
+     "bm25": 1,
+     "hybrid": 1,
+     "hybrid_rerank": 1
+    }
+   },
+   {
+    "course_ref": "TGS-2025052659",
+    "title": "AI Assisted Python Programming for Finance",
+    "provider": "TERTIARY INFOTECH ACADEMY PTE. LTD.",
+    "found_by": {
+     "bm25": 2
+    }
+   },
+   {
+    "course_ref": "TGS-2024044634",
+    "title": "CoC in Code to Sew",
+    "provider": "Institute of Technical Education",
+    "found_by": {
+     "bm25": 3,
+     "hybrid": 3
+    }
+   },
+   {
+    "course_ref": "TGS-2023039924",
+    "title": "AI Vibe Coding with Rust",
+    "provider": "TERTIARY INFOTECH ACADEMY PTE. LTD.",
+    "found_by": {
+     "bm25": 4
+    }
+   },
+   {
+    "course_ref": "TGS-2024048490",
+    "title": "Coding with AI: Github Co-pilot",
+    "provider": "NTUC LEARNINGHUB PTE. LTD.",
+    "found_by": {
+     "bm25": 5
+    }
+   },
+   {
+    "course_ref": "TGS-2019502846",
+    "title": "Computational Thinking and Coding",
+    "provider": "Nanyang Polytechnic",
+    "found_by": {
+     "dense": 1,
+     "hybrid_rerank": 2
+    }
+   },
+   {
+    "course_ref": "TGS-2021007609",
+    "title": "Coding & Development Project (in MC in Application Development in Part-time Diploma in Infocomm and Digital Media (Applied Artificial Intelligence))",
+    "provider": "Temasek Polytechnic",
+    "found_by": {
+     "dense": 2
+    }
+   },
+   {
+    "course_ref": "TGS-2021004268",
+    "title": "Computing & Programming (in MC in Computing & Programming in Part-time Diploma in Engineering (Computer Engineering))",
+    "provider": "Temasek Polytechnic",
+    "found_by": {
+     "dense": 3,
+     "hybrid_rerank": 3
+    }
+   },
+   {
+    "course_ref": "TGS-2021007739",
+    "title": "Computer Programming",
+    "provider": "Republic Polytechnic",
+    "found_by": {
+     "dense": 4,
+     "hybrid": 2
+    }
+   },
+   {
+    "course_ref": "TGS-2023040780",
+    "title": "Introduction to Computational Thinking and Programming",
+    "provider": "Nanyang Technological University",
+    "found_by": {
+     "dense": 5
+    }
+   },
+   {
+    "course_ref": "TGS-2023019346",
+    "title": "Simple Ways for Beginners to Learn Coding",
+    "provider": "Nanyang Polytechnic",
+    "found_by": {
+     "hybrid": 4
+    }
+   },
+   {
+    "course_ref": "TGS-2025060465",
+    "title": "Clever Coding: Tips & Tricks for Programming Problems",
+    "provider": "Ngee Ann Polytechnic",
+    "found_by": {
+     "hybrid": 5
+    }
+   },
+   {
+    "course_ref": "TGS-2024046902",
+    "title": " Programming Fundamentals (Bundled)(SF) (Synchronous and Asynchronous E-Learning)",
+    "provider": "LITHAN ACADEMY PTE. LTD.",
+    "found_by": {
+     "hybrid_rerank": 4
+    }
+   },
+   {
+    "course_ref": "TGS-2025059229",
+    "title": "Foundation for Technology and Coding",
+    "provider": "NANYANG TECHNOLOGICAL UNIVERSITY",
+    "found_by": {
+     "hybrid_rerank": 5
+    }
+   }
+  ],
+  "Stakeholder Management": [
+   {
+    "course_ref": "TGS-2021003694",
+    "title": "Project Optimisation through Stakeholder Analysis (POSA) Synchronous e-learning",
+    "provider": "STEVENSON HURECA PTE. LTD.",
+    "found_by": {
+     "bm25": 1
+    }
+   },
+   {
+    "course_ref": "TGS-2025056650",
+    "title": "Strategic Stakeholder & Safety Management in Services",
+    "provider": "NTUC LEARNINGHUB PTE. LTD.",
+    "found_by": {
+     "bm25": 2,
+     "hybrid": 3
+    }
+   },
+   {
+    "course_ref": "TGS-2026066100",
+    "title": "Stakeholder Management for Social Service Professionals",
+    "provider": "SINGAPORE UNIVERSITY OF SOCIAL SCIENCES",
+    "found_by": {
+     "bm25": 3,
+     "dense": 3,
+     "hybrid": 2,
+     "hybrid_rerank": 3
+    }
+   },
+   {
+    "course_ref": "TGS-2026062239",
+    "title": "TFIP - Stakeholder Engagement & Management",
+    "provider": "NTUC LEARNINGHUB PTE. LTD.",
+    "found_by": {
+     "bm25": 4
+    }
+   },
+   {
+    "course_ref": "TGS-2019503370",
+    "title": "Stakeholder Engagement and Management Level 4: Develop Workplace and Business Relationships (Synchronous e-Learning)",
+    "provider": "HUMAN CAPITAL (SINGAPORE) PTE. LTD.",
+    "found_by": {
+     "bm25": 5
+    }
+   },
+   {
+    "course_ref": "TGS-2025060248",
+    "title": "Stakeholder Management",
+    "provider": "HUSTLE ACADEMY",
+    "found_by": {
+     "dense": 1,
+     "hybrid": 1,
+     "hybrid_rerank": 1
+    }
+   },
+   {
+    "course_ref": "TGS-2021008362",
+    "title": "Stakeholder Engagement and Management L5 (Classroom and Asynchronous E-learning)",
+    "provider": "SINGAPORE INSTITUTE OF MANAGEMENT GROUP LIMITED",
+    "found_by": {
+     "dense": 2,
+     "hybrid": 5
+    }
+   },
+   {
+    "course_ref": "TGS-2026061643",
+    "title": "Stakeholder Management and Leadership",
+    "provider": "SINGAPORE UNIVERSITY OF SOCIAL SCIENCES",
+    "found_by": {
+     "dense": 4,
+     "hybrid_rerank": 4
+    }
+   },
+   {
+    "course_ref": "TGS-2026064544",
+    "title": "PWM-Cleaning: Stakeholder Management (Level 3)",
+    "provider": "ASSURE ACADEMY PTE. LTD.",
+    "found_by": {
+     "dense": 5
+    }
+   },
+   {
+    "course_ref": "TGS-2026065776",
+    "title": "Business Storytelling and Stakeholder Engagement",
+    "provider": "EQUINET ACADEMY PRIVATE LIMITED",
+    "found_by": {
+     "hybrid": 4,
+     "hybrid_rerank": 5
+    }
+   },
+   {
+    "course_ref": "TGS-2024045870",
+    "title": "Stakeholder Engagement and Management L4 (Synchronous and Asynchronous E-Learning)",
+    "provider": "SINGAPORE INSTITUTE OF MANAGEMENT GROUP LIMITED",
+    "found_by": {
+     "hybrid_rerank": 2
+    }
+   }
+  ],
+  "Ethical Culture": [
+   {
+    "course_ref": "TGS-2025053069",
+    "title": "ISO 42001 Lead Implementer Practitioner (Classroom & Asynchronous)",
+    "provider": "BSI GROUP SINGAPORE PTE. LTD.",
+    "found_by": {
+     "bm25": 1,
+     "hybrid": 4,
+     "hybrid_rerank": 2
+    }
+   },
+   {
+    "course_ref": "TGS-2025058398",
+    "title": "Ethical Culture",
+    "provider": "SINGAPORE MANAGEMENT UNIVERSITY",
+    "found_by": {
+     "bm25": 2,
+     "dense": 1,
+     "hybrid": 1
+    }
+   },
+   {
+    "course_ref": "TGS-2025053488",
+    "title": "Principles of AI Ethics and Governance for Emerging Technologies",
+    "provider": "ADEPT ACADEMY PTE. LTD.",
+    "found_by": {
+     "bm25": 3,
+     "hybrid_rerank": 3
+    }
+   },
+   {
+    "course_ref": "TGS-2024042280",
+    "title": "Finding the Balance of Profit and Ethics in Business through \u2018Water Margin\u2019",
+    "provider": "SINGAPORE CHINESE CHAMBER INSTITUTE OF BUSINESS",
+    "found_by": {
+     "bm25": 4
+    }
+   },
+   {
+    "course_ref": "TGS-2025056463",
+    "title": "Ethics, Financial Crime and Regulatory Compliance in Singapore",
+    "provider": "Nanyang Polytechnic",
+    "found_by": {
+     "bm25": 5
+    }
+   },
+   {
+    "course_ref": "TGS-2023037177",
+    "title": "Biomedical Ethics",
+    "provider": "SINGAPORE UNIVERSITY OF SOCIAL SCIENCES",
+    "found_by": {
+     "dense": 2,
+     "hybrid": 5
+    }
+   },
+   {
+    "course_ref": "TGS-2023037217",
+    "title": "Engineering Ethics",
+    "provider": "SINGAPORE UNIVERSITY OF SOCIAL SCIENCES",
+    "found_by": {
+     "dense": 3
+    }
+   },
+   {
+    "course_ref": "TGS-2026063564",
+    "title": "Society and Technology in Nursing Ethics (Classroom and Asynchronous e-learning)",
+    "provider": "NANYANG TECHNOLOGICAL UNIVERSITY",
+    "found_by": {
+     "dense": 4
+    }
+   },
+   {
+    "course_ref": "TGS-2026063572",
+    "title": "Ethical Theories and Responsibilities for Nurses (Classroom and Asynchronous e-learning)",
+    "provider": "NANYANG TECHNOLOGICAL UNIVERSITY",
+    "found_by": {
+     "dense": 5
+    }
+   },
+   {
+    "course_ref": "TGS-2026064972",
+    "title": "Leading Across Cultures in a Digital & AI-Driven World",
+    "provider": "Temasek Polytechnic",
+    "found_by": {
+     "hybrid": 2,
+     "hybrid_rerank": 4
+    }
+   },
+   {
+    "course_ref": "TGS-2024048797",
+    "title": "Counselling in a Multicultural Context (Classroom & Synchronous)",
+    "provider": "SINGAPORE UNIVERSITY OF SOCIAL SCIENCES",
+    "found_by": {
+     "hybrid": 3
+    }
+   },
+   {
+    "course_ref": "TGS-2025058399",
+    "title": "Ethical Culture (Synchronous E-Learning)",
+    "provider": "SINGAPORE MANAGEMENT UNIVERSITY",
+    "found_by": {
+     "hybrid_rerank": 1
+    }
+   },
+   {
+    "course_ref": "TGS-2025054176",
+    "title": "Advanced Certificate in Fund Establishment: Introduction to Licensing and Registration in Singapore",
+    "provider": "SINGAPORE MANAGEMENT UNIVERSITY",
+    "found_by": {
+     "hybrid_rerank": 5
+    }
+   }
+  ],
+  "Impact Indicators, Measurement and Reporting": [
+   {
+    "course_ref": "TGS-2025059362",
+    "title": "Applied Sustainability Analysis and Reporting",
+    "provider": "SINGAPORE INSTITUTE OF TECHNOLOGY",
+    "found_by": {
+     "bm25": 1,
+     "hybrid": 5,
+     "hybrid_rerank": 3
+    }
+   },
+   {
+    "course_ref": "TGS-2023039102",
+    "title": "Mastering Sustainable Business Practices: From Reporting to Risk Management",
+    "provider": "SINGAPORE MANAGEMENT UNIVERSITY",
+    "found_by": {
+     "bm25": 2
+    }
+   },
+   {
+    "course_ref": "TGS-2025060488",
+    "title": "Strategic Impact & Financial Management",
+    "provider": "SINGAPORE UNIVERSITY OF SOCIAL SCIENCES",
+    "found_by": {
+     "bm25": 3,
+     "dense": 3,
+     "hybrid": 1,
+     "hybrid_rerank": 2
+    }
+   },
+   {
+    "course_ref": "TGS-2018508919",
+    "title": "Intermediate Financial Reporting",
+    "provider": "Singapore University of Social Sciences",
+    "found_by": {
+     "bm25": 4
+    }
+   },
+   {
+    "course_ref": "TGS-2018508918",
+    "title": "Financial Reporting",
+    "provider": "Singapore University of Social Sciences",
+    "found_by": {
+     "bm25": 5
+    }
+   },
+   {
+    "course_ref": "TGS-2024047155",
+    "title": "Human Capital Measurement",
+    "provider": "Singapore University of Social Sciences",
+    "found_by": {
+     "dense": 1,
+     "hybrid": 3,
+     "hybrid_rerank": 4
+    }
+   },
+   {
+    "course_ref": "TGS-2024050644",
+    "title": "Using Data to Support Organisational Change",
+    "provider": "Singapore University of Social Sciences",
+    "found_by": {
+     "dense": 2
+    }
+   },
+   {
+    "course_ref": "TGS-2025056736",
+    "title": "Operationalising ESG initiatives for measurable results",
+    "provider": "PRICEWATERHOUSECOOPERS RISK SERVICES PTE. LTD.",
+    "found_by": {
+     "dense": 4
+    }
+   },
+   {
+    "course_ref": "TGS-2026066287",
+    "title": "Mastering Visual Analytics Series - Module 4: Creating Reports & Dashboards",
+    "provider": "SINGAPORE INSTITUTE OF TECHNOLOGY",
+    "found_by": {
+     "dense": 5,
+     "hybrid": 2
+    }
+   },
+   {
+    "course_ref": "TGS-2024042453",
+    "title": "Creating Reports and Dashboards Using Tableau",
+    "provider": "SINGAPORE MANAGEMENT UNIVERSITY",
+    "found_by": {
+     "hybrid": 4
+    }
+   },
+   {
+    "course_ref": "TGS-2025052803",
+    "title": "Impact Measurement for Sustainable Healthcare",
+    "provider": "SINGAPORE INSTITUTE OF TECHNOLOGY",
+    "found_by": {
+     "hybrid_rerank": 1
+    }
+   },
+   {
+    "course_ref": "TGS-2025054731",
+    "title": "SDE5403 Sustainability Reporting and Practices",
+    "provider": "SINGAPORE INSTITUTE OF TECHNOLOGY",
+    "found_by": {
+     "hybrid_rerank": 5
+    }
+   }
+  ],
+  "Project Management": [
+   {
+    "course_ref": "TGS-2023021749",
+    "title": "MEC6015 Project Management",
+    "provider": "SINGAPORE INSTITUTE OF TECHNOLOGY",
+    "found_by": {
+     "bm25": 1,
+     "hybrid_rerank": 5
+    }
+   },
+   {
+    "course_ref": "TGS-2020502143",
+    "title": "Project Management for the Built Environment",
+    "provider": "NATIONAL UNIVERSITY OF SINGAPORE",
+    "found_by": {
+     "bm25": 2
+    }
+   },
+   {
+    "course_ref": "TGS-2018503488",
+    "title": "SF - Project Management Professional (PMP) (Synchronous e-learning)",
+    "provider": "BRIDGINGMINDS NETWORK PTE. LTD.",
+    "found_by": {
+     "bm25": 3
+    }
+   },
+   {
+    "course_ref": "TGS-2023035646",
+    "title": "Project Management (SF)",
+    "provider": "ITEL LEARNING SYSTEMS (S) PTE LTD",
+    "found_by": {
+     "bm25": 4,
+     "dense": 1,
+     "hybrid": 1
+    }
+   },
+   {
+    "course_ref": "TGS-2020507625",
+    "title": "Executive Course for Project Management",
+    "provider": "NATIONAL UNIVERSITY OF SINGAPORE",
+    "found_by": {
+     "bm25": 5,
+     "hybrid": 2
+    }
+   },
+   {
+    "course_ref": "TGS-2023035953",
+    "title": "Project Management Methodology and Applications",
+    "provider": "SINGAPORE INSTITUTE OF TECHNOLOGY",
+    "found_by": {
+     "dense": 2
+    }
+   },
+   {
+    "course_ref": "TGS-2023021775",
+    "title": "Manage Projects To Achieve Business Goals And Stakeholder Satisfaction",
+    "provider": "LEARNERS HUB PTE. LTD.",
+    "found_by": {
+     "dense": 3
+    }
+   },
+   {
+    "course_ref": "TGS-2025057149",
+    "title": "Placemaking Project Management",
+    "provider": "NATIONAL UNIVERSITY OF SINGAPORE",
+    "found_by": {
+     "dense": 4,
+     "hybrid": 4,
+     "hybrid_rerank": 4
+    }
+   },
+   {
+    "course_ref": "TGS-2018502774",
+    "title": "Project Management Level 3: Manage Projects (Synchronous e-Learning)",
+    "provider": "HUMAN CAPITAL (SINGAPORE) PTE. LTD.",
+    "found_by": {
+     "dense": 5,
+     "hybrid_rerank": 3
+    }
+   },
+   {
+    "course_ref": "TGS-2023036591",
+    "title": "PM (Project Management)-Ready",
+    "provider": "Republic Polytechnic",
+    "found_by": {
+     "hybrid": 3
+    }
+   },
+   {
+    "course_ref": "TGS-2020504878",
+    "title": "Project Management - Made Fun and Easy",
+    "provider": "Republic Polytechnic",
+    "found_by": {
+     "hybrid": 5,
+     "hybrid_rerank": 2
+    }
+   },
+   {
+    "course_ref": "TGS-2021007918",
+    "title": "Project Management (in PDC in Tourism Operations in Specialist Diploma in MICE & Events Management)",
+    "provider": "Temasek Polytechnic",
+    "found_by": {
+     "hybrid_rerank": 1
+    }
+   }
+  ],
+  "Budgeting": [
+   {
+    "course_ref": "TGS-2026061751",
+    "title": "Budgeting (Level 4)",
+    "provider": "Centre For Urban Greenery And Ecology",
+    "found_by": {
+     "bm25": 1,
+     "dense": 1,
+     "hybrid": 1,
+     "hybrid_rerank": 4
+    }
+   },
+   {
+    "course_ref": "TGS-2020500622",
+    "title": "Budgeting for Charities (Synchronous e-learning)",
+    "provider": "Social Service Institute (SSI)",
+    "found_by": {
+     "bm25": 2,
+     "dense": 3,
+     "hybrid": 2,
+     "hybrid_rerank": 3
+    }
+   },
+   {
+    "course_ref": "TGS-2021002336",
+    "title": "Budgeting for Small and Medium Enterprises",
+    "provider": "TERTIARY INFOTECH ACADEMY PTE. LTD.",
+    "found_by": {
+     "bm25": 3,
+     "hybrid": 4,
+     "hybrid_rerank": 2
+    }
+   },
+   {
+    "course_ref": "TGS-2021009569",
+    "title": "Effective Budgeting Techniques",
+    "provider": "IMPACT MANAGEMENT SEMINARS PTE LTD",
+    "found_by": {
+     "bm25": 4,
+     "dense": 2,
+     "hybrid": 3,
+     "hybrid_rerank": 1
+    }
+   },
+   {
+    "course_ref": "TGS-2022014846",
+    "title": "Management Accounting",
+    "provider": "Republic Polytechnic",
+    "found_by": {
+     "bm25": 5
+    }
+   },
+   {
+    "course_ref": "TGS-2013500351",
+    "title": "Manage Budgeting and Forecasting Processes for the Business Unit",
+    "provider": "SINGAPORE NATIONAL EMPLOYERS FEDERATION",
+    "found_by": {
+     "dense": 4
+    }
+   },
+   {
+    "course_ref": "TGS-2025052455",
+    "title": "Budget Management",
+    "provider": "HUSTLE INSTITUTE PTE. LTD.",
+    "found_by": {
+     "dense": 5
+    }
+   },
+   {
+    "course_ref": "TGS-2022016990",
+    "title": "Food and Beverage Budgeting Management (Classroom & Asynchronous)",
+    "provider": "SHRM COLLEGE PTE. LTD.",
+    "found_by": {
+     "hybrid": 5
+    }
+   },
+   {
+    "course_ref": "TGS-2024042093",
+    "title": "Budgeting &  Financial Management - Part of Modular Certificate in Filmmaking as a Business (DFM)",
+    "provider": "Ngee Ann Polytechnic",
+    "found_by": {
+     "hybrid_rerank": 5
+    }
+   }
+  ],
+  "Cybersecurity": [
+   {
+    "course_ref": "TGS-2024050092",
+    "title": "ISACA Cybersecurity Fundamentals (SF)",
+    "provider": "NTUC LEARNINGHUB PTE. LTD.",
+    "found_by": {
+     "bm25": 1,
+     "hybrid": 3
+    }
+   },
+   {
+    "course_ref": "TGS-2025056217",
+    "title": "(SCTP Module) Design Thinking and Innovation in Cybersecurity",
+    "provider": "SINGAPORE UNIVERSITY OF TECHNOLOGY AND DESIGN",
+    "found_by": {
+     "bm25": 2,
+     "hybrid": 5
+    }
+   },
+   {
+    "course_ref": "TGS-2025052352",
+    "title": "Specialist Diploma in Cybersecurity-PCM",
+    "provider": "Nanyang Polytechnic",
+    "found_by": {
+     "bm25": 3
+    }
+   },
+   {
+    "course_ref": "TGS-2021006649",
+    "title": "Cybersecurity for Management (Synchronous e-learning)",
+    "provider": "SINGAPORE INSTITUTE OF TECHNOLOGY",
+    "found_by": {
+     "bm25": 4,
+     "hybrid_rerank": 5
+    }
+   },
+   {
+    "course_ref": "TGS-2020504502",
+    "title": "Industry 4.0 Cybersecurity Management for Operation/ MES/IT Managers",
+    "provider": "SINGAPORE INSTITUTE OF MANUFACTURING TECHNOLOGY",
+    "found_by": {
+     "bm25": 5
+    }
+   },
+   {
+    "course_ref": "TGS-2025059779",
+    "title": "Cyber Threats Uncovered: How to Protect, Detect and Escalate",
+    "provider": "MS LEARNING AND TRAINING PTE. LTD.",
+    "found_by": {
+     "dense": 1,
+     "hybrid": 4,
+     "hybrid_rerank": 4
+    }
+   },
+   {
+    "course_ref": "TGS-2025053054",
+    "title": "Connected & Protected: Essential Skills for Online Payments and Security",
+    "provider": "EDUPEDIA LANGUAGE AND TRAINING PTE. LTD.",
+    "found_by": {
+     "dense": 2
+    }
+   },
+   {
+    "course_ref": "TGS-2025059256",
+    "title": "Digital Defence: Cybersecurity Awareness & Scam Smarts",
+    "provider": "Ngee Ann Polytechnic",
+    "found_by": {
+     "dense": 3
+    }
+   },
+   {
+    "course_ref": "TGS-2023037394",
+    "title": "Cybersecurity - A Holistic Approach (Synchronous e-Learning)",
+    "provider": "SINGAPORE UNIVERSITY OF SOCIAL SCIENCES",
+    "found_by": {
+     "dense": 4,
+     "hybrid": 1,
+     "hybrid_rerank": 1
+    }
+   },
+   {
+    "course_ref": "TGS-2025053158",
+    "title": "Cybersecurity: Combating the Latest Cyber Threats, Scams and Other Risks",
+    "provider": "LITERACY EMPOWERMENT ACADEMY PTE. LTD.",
+    "found_by": {
+     "dense": 5,
+     "hybrid": 2,
+     "hybrid_rerank": 3
+    }
+   },
+   {
+    "course_ref": "TGS-2026065846",
+    "title": "Cybersecurity Essentials : Protecting Against Online Threats and Scams",
+    "provider": "GENETIC COMPUTER SCHOOL PTE LTD",
+    "found_by": {
+     "hybrid_rerank": 2
+    }
+   }
+  ],
+  "Artificial Intelligence Application": [
+   {
+    "course_ref": "TGS-2023020640",
+    "title": "Demystify Generative Artificial Intelligence",
+    "provider": "Nanyang Polytechnic",
+    "found_by": {
+     "bm25": 1
+    }
+   },
+   {
+    "course_ref": "TGS-2022012166",
+    "title": "MGE905 Introduction to Data Science in Education Research (Classroom, Asynchronous)",
+    "provider": "NANYANG TECHNOLOGICAL UNIVERSITY",
+    "found_by": {
+     "bm25": 2
+    }
+   },
+   {
+    "course_ref": "TGS-2026066174",
+    "title": "Generative AI: Future of Creative",
+    "provider": "NTUC LEARNINGHUB PTE. LTD.",
+    "found_by": {
+     "bm25": 3
+    }
+   },
+   {
+    "course_ref": "TGS-2026066201",
+    "title": "Operationalise Machine Learning and Generative AI solutions (Microsoft Certified MLOps Engineer)",
+    "provider": "NTUC LEARNINGHUB PTE. LTD.",
+    "found_by": {
+     "bm25": 4
+    }
+   },
+   {
+    "course_ref": "TGS-2023036260",
+    "title": "Building Artificial Intelligence (AI) Applications from End to End (Classroom and Synchronous E-Learning)",
+    "provider": "Nanyang Polytechnic",
+    "found_by": {
+     "bm25": 5,
+     "hybrid": 3,
+     "hybrid_rerank": 3
+    }
+   },
+   {
+    "course_ref": "TGS-2021010318",
+    "title": "Introduction to Artificial Intelligence",
+    "provider": "SINGAPORE UNIVERSITY OF TECHNOLOGY AND DESIGN",
+    "found_by": {
+     "dense": 1,
+     "hybrid_rerank": 4
+    }
+   },
+   {
+    "course_ref": "TGS-2025056131",
+    "title": "Applied Artificial Intelligence",
+    "provider": "NATIONAL UNIVERSITY OF SINGAPORE",
+    "found_by": {
+     "dense": 2
+    }
+   },
+   {
+    "course_ref": "TGS-2024046779",
+    "title": "Applied AI for Digital Marketers",
+    "provider": "Republic Polytechnic",
+    "found_by": {
+     "dense": 3,
+     "hybrid_rerank": 5
+    }
+   },
+   {
+    "course_ref": "TGS-2020001002",
+    "title": "Artificial Intelligence for Techies - A Hands-On Approach",
+    "provider": "Republic Polytechnic",
+    "found_by": {
+     "dense": 4
+    }
+   },
+   {
+    "course_ref": "TGS-2024042564",
+    "title": "Artificial Intelligence Application  (Synchronous E-learning)",
+    "provider": "NATC INSTITUTE PTE. LTD.",
+    "found_by": {
+     "dense": 5,
+     "hybrid": 1,
+     "hybrid_rerank": 1
+    }
+   },
+   {
+    "course_ref": "TGS-2023037568",
+    "title": "Building a Low-Code Application With Generative Artificial Intelligence",
+    "provider": "SINGAPORE POLYTECHNIC",
+    "found_by": {
+     "hybrid": 2
+    }
+   },
+   {
+    "course_ref": "TGS-2025059178",
+    "title": "ILA0021 - Introduction to Artificial Intelligence",
+    "provider": "NANYANG TECHNOLOGICAL UNIVERSITY",
+    "found_by": {
+     "hybrid": 4,
+     "hybrid_rerank": 2
+    }
+   },
+   {
+    "course_ref": "TGS-2026066019",
+    "title": "Gain Real Outcomes for Work (GROW) - Transforming Enterprise Operations with Vision AI and Smart Apps (Classroom, Synchronous e-learning & Asynchronous e-learning)",
+    "provider": "Ngee Ann Polytechnic",
+    "found_by": {
+     "hybrid": 5
+    }
+   }
+  ],
+  "Digital Marketing Management": [
+   {
+    "course_ref": "TGS-2020505910",
+    "title": "Digital Marketing Management: Planning and Implementing Integrated Marketing Campaigns",
+    "provider": "HASHMETA PTE. LTD.",
+    "found_by": {
+     "bm25": 1,
+     "hybrid_rerank": 3
+    }
+   },
+   {
+    "course_ref": "TGS-2024047236",
+    "title": "Digital Marketing Practicum",
+    "provider": "Singapore University of Social Sciences",
+    "found_by": {
+     "bm25": 2
+    }
+   },
+   {
+    "course_ref": "TGS-2026064212",
+    "title": "Digital Marketing Management",
+    "provider": "SINGAPORE POLYTECHNIC",
+    "found_by": {
+     "bm25": 3,
+     "dense": 1,
+     "hybrid": 1,
+     "hybrid_rerank": 1
+    }
+   },
+   {
+    "course_ref": "TGS-2020513835",
+    "title": "(18hrs) WSQ - Digital Marketing Analytics (Synchronous E-Learning)",
+    "provider": "@ASK TRAINING PTE. LTD.",
+    "found_by": {
+     "bm25": 4
+    }
+   },
+   {
+    "course_ref": "TGS-2022015566",
+    "title": "(SCTP) Professional Diploma in Digital Marketing (E-Learning) (Eligible for Full-Time TA)",
+    "provider": "LITHAN ACADEMY PTE. LTD.",
+    "found_by": {
+     "bm25": 5
+    }
+   },
+   {
+    "course_ref": "TGS-2026061500",
+    "title": "Digital Marketing (SEM) in Retail (Classroom and Asynchronous e-learning)",
+    "provider": "TEMBUSU INSTITUTE PTE. LTD.",
+    "found_by": {
+     "dense": 2
+    }
+   },
+   {
+    "course_ref": "TGS-2020501814",
+    "title": "Digital Marketing for Hospitality Management: A Practical Approach",
+    "provider": "Nanyang Polytechnic",
+    "found_by": {
+     "dense": 3,
+     "hybrid": 3
+    }
+   },
+   {
+    "course_ref": "TGS-2023021024",
+    "title": "Introduction to Digital Marketing - Part of Modular Certificate in Digital Marketing & Analytics (DDC)",
+    "provider": "Ngee Ann Polytechnic",
+    "found_by": {
+     "dense": 4,
+     "hybrid": 2
+    }
+   },
+   {
+    "course_ref": "TGS-2025057201",
+    "title": "Digital Marketing to Drive Business Growth and ROI [Classroom Facilitated, Asynchronous E-Learning]",
+    "provider": "Singapore Institute Of Retail Studies (SIRS)",
+    "found_by": {
+     "dense": 5
+    }
+   },
+   {
+    "course_ref": "TGS-2023022094",
+    "title": "Using Digital Marketing to Optimising Revenues and acquiring Customers",
+    "provider": "SINGAPORE INSTITUTE OF TECHNOLOGY",
+    "found_by": {
+     "hybrid": 4
+    }
+   },
+   {
+    "course_ref": "TGS-2026064211",
+    "title": "Post-Diploma Certificate in Digital Marketing Management & Analytics",
+    "provider": "SINGAPORE POLYTECHNIC",
+    "found_by": {
+     "hybrid": 5,
+     "hybrid_rerank": 2
+    }
+   },
+   {
+    "course_ref": "TGS-2025055858",
+    "title": "Advancing Business Through Digital Marketing (Part-Time)",
+    "provider": "BELLS Institute of Higher Learning Pte. Ltd.",
+    "found_by": {
+     "hybrid_rerank": 4
+    }
+   },
+   {
+    "course_ref": "TGS-2025061025",
+    "title": "Essentials of Digital Marketing",
+    "provider": "SINGAPORE POLYTECHNIC",
+    "found_by": {
+     "hybrid_rerank": 5
+    }
+   }
+  ],
+  "Customer Experience Management": [
+   {
+    "course_ref": "TGS-2024050921",
+    "title": "Customer Experience Management L4",
+    "provider": "NTUC LEARNINGHUB PTE. LTD.",
+    "found_by": {
+     "bm25": 1
+    }
+   },
+   {
+    "course_ref": "TGS-2026061668",
+    "title": "Modular Certificate in Customer Experience Design & Management (part of Diploma in Business Practice (Customer Experience & Relationship Management))",
+    "provider": "Nanyang Polytechnic",
+    "found_by": {
+     "bm25": 2
+    }
+   },
+   {
+    "course_ref": "TGS-2023040977",
+    "title": "Customer Experience Management and Innovation - Part of Modular Certificate in Self-Management and People Effectiveness (DMFW1)",
+    "provider": "Ngee Ann Polytechnic",
+    "found_by": {
+     "bm25": 3,
+     "hybrid": 3,
+     "hybrid_rerank": 3
+    }
+   },
+   {
+    "course_ref": "TGS-2025060617",
+    "title": "Customer Experience Management (part of the MC4 of Diploma in Business Practice (Customer Relationship & Service Management))",
+    "provider": "Nanyang Polytechnic",
+    "found_by": {
+     "bm25": 4,
+     "hybrid": 1
+    }
+   },
+   {
+    "course_ref": "TGS-2024047739",
+    "title": "Amplify Experience Management with Data & Insights",
+    "provider": "NATIONAL UNIVERSITY OF SINGAPORE",
+    "found_by": {
+     "bm25": 5,
+     "dense": 4,
+     "hybrid": 2
+    }
+   },
+   {
+    "course_ref": "TGS-2019504533",
+    "title": "Customer Experience Management (Synchronous e-learning)",
+    "provider": "CARETECH168 LLP",
+    "found_by": {
+     "dense": 1,
+     "hybrid_rerank": 1
+    }
+   },
+   {
+    "course_ref": "TGS-2020513662",
+    "title": "Customer Experience Management Powered by Design Thinking",
+    "provider": "AGAPE, CONNECTING PEOPLE PTE. LTD.",
+    "found_by": {
+     "dense": 2,
+     "hybrid": 4,
+     "hybrid_rerank": 4
+    }
+   },
+   {
+    "course_ref": "TGS-2023035563",
+    "title": "Professional Development (Executive) Series: Promote a Customer Centric Experience",
+    "provider": "NTUC LEARNINGHUB PTE. LTD.",
+    "found_by": {
+     "dense": 3
+    }
+   },
+   {
+    "course_ref": "TGS-2025059537",
+    "title": "(SCTP) Customer Experience Manager (Eligible for Full-Time TA)",
+    "provider": "NTUC LEARNINGHUB PTE. LTD.",
+    "found_by": {
+     "dense": 5,
+     "hybrid_rerank": 2
+    }
+   },
+   {
+    "course_ref": "TGS-2025055990",
+    "title": "Customer Experience: Optimising the Omnichannel Customer Engagement [Classroom Facilitated, Asynchronous E-Learning]",
+    "provider": "Singapore Institute Of Retail Studies (SIRS)",
+    "found_by": {
+     "hybrid": 5
+    }
+   },
+   {
+    "course_ref": "TGS-2026062690",
+    "title": "PWM-Retail: Customer Experience Management (Level 1)",
+    "provider": "Institute of Technical Education",
+    "found_by": {
+     "hybrid_rerank": 5
+    }
+   }
+  ],
+  "Workplace Safety and Health": [
+   {
+    "course_ref": "TGS-2011500579",
+    "title": "Maintain Workplace Safety & Health Policies & Procedures",
+    "provider": "SINGAPORE NATIONAL EMPLOYERS FEDERATION",
+    "found_by": {
+     "bm25": 1
+    }
+   },
+   {
+    "course_ref": "TGS-2026066438",
+    "title": "Advanced Certificate in Workplace Safety and Health (Level B) [course is for accreditation only]",
+    "provider": "Temasek Polytechnic",
+    "found_by": {
+     "bm25": 2
+    }
+   },
+   {
+    "course_ref": "TGS-2022017144",
+    "title": " Advanced Certificate in Workplace Safety and Health (Classroom and Asynchronous E-Learning)",
+    "provider": "EVERSAFE ACADEMY PTE. LTD.",
+    "found_by": {
+     "bm25": 3
+    }
+   },
+   {
+    "course_ref": "TGS-2025056260",
+    "title": "Comply with Workplace Safety & Health Policies and Procedures [SCTP accreditation only]",
+    "provider": "Temasek Polytechnic",
+    "found_by": {
+     "bm25": 4
+    }
+   },
+   {
+    "course_ref": "TGS-2009500231",
+    "title": "Practise Workplace Safety & Health for Signalling and Rigging",
+    "provider": "ST ENGINEERING MARINE LTD.",
+    "found_by": {
+     "bm25": 5,
+     "dense": 2,
+     "hybrid": 1
+    }
+   },
+   {
+    "course_ref": "TGS-2024041981",
+    "title": "Workplace Safety and Health",
+    "provider": "NATIONAL UNIVERSITY OF SINGAPORE",
+    "found_by": {
+     "dense": 1,
+     "hybrid": 5
+    }
+   },
+   {
+    "course_ref": "TGS-2023037379",
+    "title": "Enhancing the Health Environment at Workplaces",
+    "provider": "SINGAPORE UNIVERSITY OF SOCIAL SCIENCES",
+    "found_by": {
+     "dense": 3
+    }
+   },
+   {
+    "course_ref": "TGS-2023021739",
+    "title": "Workplace Safety and Health for Food and Beverage Operations",
+    "provider": "AESTHETICAR PTE. LTD.",
+    "found_by": {
+     "dense": 4
+    }
+   },
+   {
+    "course_ref": "TGS-2011500594",
+    "title": "Maintain Workplace Safety and Health Policies and Procedures",
+    "provider": "SSA ACADEMY PTE. LTD.",
+    "found_by": {
+     "dense": 5,
+     "hybrid": 2,
+     "hybrid_rerank": 4
+    }
+   },
+   {
+    "course_ref": "TGS-2019504278",
+    "title": "Comply with Workplace Safety and Health Policies and Procedures",
+    "provider": "E M LEARNING PRIVATE LIMITED",
+    "found_by": {
+     "hybrid": 3
+    }
+   },
+   {
+    "course_ref": "TGS-2024051423",
+    "title": "Integrating and Sustaining Total Workplace Safety and Health at the Workplace",
+    "provider": "NATIONAL UNIVERSITY OF SINGAPORE",
+    "found_by": {
+     "hybrid": 4,
+     "hybrid_rerank": 5
+    }
+   },
+   {
+    "course_ref": "TGS-2024044450",
+    "title": "WSQ Comply with Workplace Safety and Health Practices (Classroom and Asynchronous e-learning)",
+    "provider": "NTUC LEARNINGHUB PTE. LTD.",
+    "found_by": {
+     "hybrid_rerank": 1
+    }
+   },
+   {
+    "course_ref": "TGS-2024043453",
+    "title": "Workplace Safety and Health (Classroom & Asynchronous)",
+    "provider": "HMI INSTITUTE OF HEALTH SCIENCES PTE. LTD.",
+    "found_by": {
+     "hybrid_rerank": 2
+    }
+   },
+   {
+    "course_ref": "TGS-2025055795",
+    "title": "Workplace Safety and Health Practices implementation in Environmental Services",
+    "provider": "DYNAMIC SAFETY PTE. LTD.",
+    "found_by": {
+     "hybrid_rerank": 3
+    }
+   }
+  ]
+ }
+}
