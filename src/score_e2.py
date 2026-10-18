@@ -1,46 +1,22 @@
-"""
-STEP 7b-2 - Mark E2 (course relevance).
+"""Score E2 using complete LLM judgments and majority voting on every row.
 
-    py src/score_e2.py            # agreement + precision@k per search mode
-    py src/score_e2.py --tune     # also suggest STRONG/WEAK match thresholds
-                                   (loads the re-ranker, ~1 min)
+    python src/score_e2.py
+    python src/score_e2.py --judges labels/e2_llm_judges_v2.json
+    python src/score_e2.py --tune
 
-Labels
-  AI file  (ChatGPT, all rows)        labels/E2_labeller_AI.xlsx
-  A, B     (humans, ~50 sample rows)  labels/E2_labeller_A.xlsx, _B.xlsx
-
-Gold label per row (state this rule in the report):
-  * sample rows: majority vote of A, B and AI (3 voters, no ties)
-  * other rows : the AI label
-  The human-vs-AI agreement on the sample tells the reader how far to trust
-  the AI-only rows.
-
-Outputs: printed tables + results/e2_results.json
+Excel workbooks are readable copies; the saved judge JSON is the scoring input.
+No human annotations or sampled-row voting are used.
+Outputs: results/e2_llm_results.json
 """
 from __future__ import annotations
 
 import json
-import sys
+import argparse
 from pathlib import Path
 
-import pandas as pd
-
 ROOT = Path(__file__).resolve().parent.parent
-LABELS, EVALS, RESULTS = ROOT / "labels", ROOT / "evals", ROOT / "results"
+LABELS, RESULTS = ROOT / "labels", ROOT / "results"
 MODES = ["bm25", "dense", "hybrid", "hybrid_rerank"]
-
-
-def read_labels(name: str) -> dict[int, str]:
-    path = LABELS / f"E2_labeller_{name}.xlsx"
-    if not path.exists():
-        return {}
-    df = pd.read_excel(path, "labels")
-    out = {}
-    for rid, val in zip(df["row_id"], df["relevant"]):
-        v = str(val).strip().upper()[:1] if pd.notna(val) else ""
-        if v in {"Y", "N"}:
-            out[int(rid)] = v
-    return out
 
 
 def cohen_kappa(x: dict[int, str], y: dict[int, str]) -> tuple[float | None, int, float | None]:
@@ -54,17 +30,6 @@ def cohen_kappa(x: dict[int, str], y: dict[int, str]) -> tuple[float | None, int
     expected = px * py + (1 - px) * (1 - py)
     kappa = None if expected == 1 else (agree - expected) / (1 - expected)
     return kappa, n, agree
-
-
-def gold_labels(ai, a, b, sample_ids) -> dict[int, str]:
-    gold = dict(ai)
-    for rid in sample_ids:
-        votes = [lab[rid] for lab in (a, b, ai) if rid in lab]
-        if len(votes) == 3:
-            gold[rid] = "Y" if votes.count("Y") >= 2 else "N"
-        elif votes and len(set(votes)) == 1:
-            gold[rid] = votes[0]
-    return gold
 
 
 def precision_at_k(pool: dict, gold_by_pair: dict, mode: str, k: int) -> tuple[float, int]:
@@ -104,65 +69,90 @@ def tune_thresholds(pairs: list[tuple[str, str, str, str]], scorer) -> dict:
             "suggested_STRONG_MATCH": strong, "n_pairs": len(pairs)}
 
 
-def main() -> None:
-    ai1, ai2, a, b = read_labels("AI"), read_labels("AI2"), read_labels("A"), read_labels("B")
-    # AI v2 (stricter prompt, written BEFORE the human labels existed) replaces v1 when present.
-    # Both versions' agreement with the humans is reported, never just the better one.
-    ai = ai2 or ai1
-    if not ai:
-        sys.exit("No AI labels found: fill labels/E2_labeller_AI.xlsx (or _AI2.xlsx) first.")
-    sample = set(json.loads((EVALS / "e2_sample.json").read_text())["row_ids"]) \
-        if (EVALS / "e2_sample.json").exists() else set()
-    pool = json.loads((EVALS / "e2_pool.json").read_text())["skills"]
-    sheet = pd.read_excel(LABELS / ("E2_labeller_AI2.xlsx" if ai2 else "E2_labeller_AI.xlsx"), "labels")
-    row_pair = {int(r): (s, c) for r, s, c in zip(sheet["row_id"], sheet["skill"], sheet["course_ref"])}
+def llm_consensus(data: dict) -> tuple[dict, dict]:
+    """Require complete coverage and an odd number of identified model judges."""
+    rows, judges = data["rows"], data["judges"]
+    if not judges or len(judges) % 2 == 0:
+        raise ValueError("Use an odd number of LLM judges (preferably 3) to avoid tied votes")
+    ids = {str(r["row_id"]) for r in rows}
+    if not ids or len(ids) != len(rows):
+        raise ValueError("Empty or duplicate input row IDs")
+    labels = {}
+    for name, judge in judges.items():
+        if judge.get("model") != name:
+            raise ValueError(f"Judge identity mismatch: {name}")
+        if set(judge["labels"]) != ids:
+            raise ValueError(f"{name} has incomplete labels; resume e2_llm_judge.py without --limit")
+        labels[name] = {int(rid): v["relevant"] for rid, v in judge["labels"].items()}
+        if any(v not in {"Y", "N"} for v in labels[name].values()):
+            raise ValueError(f"Invalid Y/N label from {name}")
+    gold = {int(rid): "Y" if sum(lab[int(rid)] == "Y" for lab in labels.values()) > len(labels) / 2
+            else "N" for rid in ids}
+    return gold, labels
 
-    report: dict = {"ai_version_used_for_gold": "v2" if ai2 else "v1",
-                    "rows_total": len(row_pair), "rows_ai_labelled": len(ai),
-                    "sample_size": len(sample), "agreement": {}}
-    yes = lambda lab: f"{sum(v == 'Y' for v in lab.values()) / len(lab):.0%} Y" if lab else "-"
-    print(f"\nLABELS  AI v1: {len(ai1)} ({yes(ai1)})   AI v2: {len(ai2)} ({yes(ai2)})   "
-          f"A: {len(a)} ({yes(a)})   B: {len(b)} ({yes(b)})   sample: {len(sample)}")
-    print(f"Gold uses AI {report['ai_version_used_for_gold']} outside the sample.")
-    print("\nAGREEMENT (on rows both labelled)")
-    pairs_to_compare = [("A vs B (human-human)", a, b), ("AI v1 vs A", ai1, a), ("AI v1 vs B", ai1, b)]
-    if ai2:
-        pairs_to_compare += [("AI v2 vs A", ai2, a), ("AI v2 vs B", ai2, b), ("AI v1 vs AI v2", ai1, ai2)]
-    for name, x, y in pairs_to_compare:
-        k, n, raw = cohen_kappa(x, y)
-        report["agreement"][name] = {"kappa": k, "n": n, "raw_agreement": raw}
-        if n:
-            print(f"  {name:22} kappa {k if k is None else round(k, 2)}   agree {raw:.0%}   (n={n})")
-        else:
-            print(f"  {name:22} (no overlapping labels yet)")
 
-    gold = gold_labels(ai, a, b, sample)
-    gold_by_pair = {row_pair[r]: v for r, v in gold.items() if r in row_pair}
-    report["gold_relevant_rate"] = round(sum(v == "Y" for v in gold.values()) / len(gold), 3)
-    print(f"\nPRECISION@k BY SEARCH MODE (share of shown courses that are relevant; "
-          f"{report['gold_relevant_rate']:.0%} of pooled courses are relevant overall)")
+def score_llm_judges(path: Path, tune: bool = False) -> None:
+    from itertools import combinations
+    from e2_llm_judge import fingerprint
+
+    data = json.loads(path.read_text())
+    if data.get("method") != "llm_judges" or data.get("input_sha256") != fingerprint(data["rows"], data["pool"]):
+        raise ValueError("Invalid LLM judge file or mismatched input fingerprint")
+    gold, judges = llm_consensus(data)
+    names = {name: judge.get("display_name", name) for name, judge in data["judges"].items()}
+    row_pair = {int(r["row_id"]): (r["skill"], r["course_ref"]) for r in data["rows"]}
+    pool = data["pool"]["skills"]
+    expected = {(skill, e["course_ref"]) for skill, entries in pool.items() for e in entries}
+    if set(row_pair.values()) != expected or len(row_pair) != len(expected):
+        raise ValueError("Judge rows do not match saved retrieval pool")
+    report = {"label_method": "llm_majority" if len(judges) > 1 else "single_llm_judge",
+              "judges": list(names.values()), "judge_ids": list(judges),
+              "rows_total": len(gold), "human_validated": False,
+              "judge_metadata": {name: {k: v for k, v in judge.items() if k != "labels"}
+                                 for name, judge in data["judges"].items()},
+              "input_sha256": data["input_sha256"], "prompt": data["prompt"],
+              "agreement": {}, "precision": {}}
+    print(f"LLM-only labels: {len(gold)} rows, {len(judges)} judge(s); no human validation.")
+    for name, labels in judges.items():
+        print(f"  {names[name]}: {len(labels)}/{len(gold)} labels")
+    print("\nAGREEMENT BETWEEN LLM JUDGES")
+    for a, b in combinations(judges, 2):
+        kappa, n, raw = cohen_kappa(judges[a], judges[b])
+        pair = f"{names[a]} vs {names[b]}"
+        report["agreement"][pair] = {"kappa": kappa, "n": n, "raw_agreement": raw}
+        print(f"  {pair}: kappa={kappa}, agreement={raw:.1%} (n={n})")
+    gold_by_pair = {row_pair[rid]: label for rid, label in gold.items()}
     print(f"  {'mode':15} {'P@1':>6} {'P@3':>6} {'P@5':>6}")
-    report["precision"] = {}
-    for m in MODES:
-        row = {f"P@{k}": precision_at_k(pool, gold_by_pair, m, k)[0] for k in (1, 3, 5)}
-        report["precision"][m] = row
-        print(f"  {m:15} " + " ".join(f"{v:6.2f}" for v in row.values()))
-
-    if "--tune" in sys.argv:
-        sys.path.insert(0, str(Path(__file__).resolve().parent))
+    for mode in MODES:
+        metrics = {f"P@{k}": precision_at_k(pool, gold_by_pair, mode, k)[0] for k in (1, 3, 5)}
+        report["precision"][mode] = metrics
+        print(f"  {mode:15} " + " ".join(f"{v:6.2f}" for v in metrics.values()))
+    report["disagreement_rows"] = sorted(rid for rid in gold
+                                          if len({lab[rid] for lab in judges.values()}) > 1)
+    if tune:
         from course_search import CourseIndex, _st_reranker
         text = {c["course_ref"]: c["search_text"] for c in CourseIndex(mode="bm25").courses}
-        pairs = [(s, text[c], c, v) for (s, c), v in gold_by_pair.items() if c in text]
+        missing = {course for _, course in gold_by_pair if course not in text}
+        if missing:
+            raise ValueError("Courses from the saved judge pool are missing from the current database")
+        pairs = [(skill, text[course], course, vote) for (skill, course), vote in gold_by_pair.items()]
         report["thresholds"] = tune_thresholds(pairs, _st_reranker())
-        t = report["thresholds"]
-        print(f"\nTHRESHOLDS (re-ranker scores vs gold labels, n={t['n_pairs']})")
-        print(f"  WEAK_MATCH   -> {t['suggested_WEAK_MATCH']}  (best Y/N split, accuracy {t['accuracy_at_weak']:.0%})")
-        print(f"  STRONG_MATCH -> {t['suggested_STRONG_MATCH']}  (lowest score where >= 90% are relevant)")
-        print("  Set them in PowerShell, e.g.  $env:CAREER_WEAK_MATCH = \"...\"  and report the values.")
-
+        print("Suggested thresholds (not applied):", report["thresholds"])
     RESULTS.mkdir(exist_ok=True)
-    (RESULTS / "e2_results.json").write_text(json.dumps(report, indent=1, default=str))
-    print(f"\nSaved results/e2_results.json")
+    output = RESULTS / "e2_llm_results.json"
+    output.write_text(json.dumps(report, indent=2) + "\n")
+    print(f"Saved {output}; {len(report['disagreement_rows'])} rows have judge disagreement.")
+
+
+def main(argv=None) -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--judges", type=Path, default=LABELS / "e2_llm_judges.json",
+                        help="Complete saved LLM judgments (default: labels/e2_llm_judges.json)")
+    parser.add_argument("--tune", action="store_true", help="Suggest reranker thresholds using LLM consensus")
+    args = parser.parse_args(argv)
+    if not args.judges.exists():
+        parser.error(f"No saved LLM judgments at {args.judges}. Run src/e2_llm_judge.py first.")
+    score_llm_judges(args.judges, tune=args.tune)
 
 
 if __name__ == "__main__":
