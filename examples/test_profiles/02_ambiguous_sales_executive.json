@@ -1,0 +1,24 @@
+{
+  "description": "'Sales Executive' exists in 4+ sectors, all scoring 1.0. Offline: margin rule means no suggestion. Claude must pick one but report confidence under 0.6.",
+  "profile": {
+    "role": "Sales Executive",
+    "age": 29,
+    "residency": "citizen",
+    "status": "employed"
+  },
+  "stop_at": "confirm_role",
+  "expect": {
+    "fake": {
+      "pauses": [
+        "confirm_role"
+      ],
+      "suggested_role_id": null
+    },
+    "real": {
+      "pauses": [
+        "confirm_role"
+      ],
+      "max_confidence": 0.6
+    }
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "description": "'Human Resources Executive' (plural). SYNONYMS turns it into 'hr executive', but the sector fallback needs a word shared with the sector name 'Human Resource', and 'resources' != 'resource'. HR roles never reach the shortlist. Recorded as CURRENT behaviour.",
+  "profile": {
+    "role": "Human Resources Executive",
+    "age": 31,
+    "residency": "citizen",
+    "status": "employed",
+    "goal": "become an HR business partner"
+  },
+  "stop_at": "confirm_role",
+  "expect": {
+    "fake": {
+      "pauses": [
+        "confirm_role"
+      ],
+      "suggested_role_id": null,
+      "no_candidate_sector": "Human Resource"
+    },
+    "real": {
+      "pauses": [
+        "confirm_role"
+      ],
+      "no_candidate_sector": "Human Resource"
+    }
+  }
+}

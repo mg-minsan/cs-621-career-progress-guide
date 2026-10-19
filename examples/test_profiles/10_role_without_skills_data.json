@@ -1,0 +1,22 @@
+{
+  "description": "Arts Educator (role 249) is one of 29 framework roles with no skills rows. nearby_roles returns nothing and with no goal there are no candidate paths, so rank_paths raises.",
+  "profile": {
+    "role": "Arts Educator",
+    "age": 38,
+    "residency": "citizen",
+    "status": "employed"
+  },
+  "answers": [
+    {
+      "role_id": 249
+    }
+  ],
+  "expect": {
+    "fake": {
+      "error_contains": "No candidate paths found"
+    },
+    "real": {
+      "error_contains": "No candidate paths found"
+    }
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "description": "'F&B supervisor' -> 'service supervisor' via SYNONYMS; role 1056 scores 1.0. Runner-up scores 0.909, inside the 0.1 margin, so the offline rule will not auto-pick. Claude should.",
+  "profile": {
+    "role": "F&B supervisor",
+    "age": 26,
+    "residency": "citizen",
+    "status": "employed"
+  },
+  "stop_at": "confirm_role",
+  "expect": {
+    "fake": {
+      "pauses": [
+        "confirm_role"
+      ],
+      "top_candidate_id": 1056,
+      "suggested_role_id": null
+    },
+    "real": {
+      "pauses": [
+        "confirm_role"
+      ],
+      "top_candidate_id": 1056,
+      "suggested_role_id": 1056
+    }
+  }
+}

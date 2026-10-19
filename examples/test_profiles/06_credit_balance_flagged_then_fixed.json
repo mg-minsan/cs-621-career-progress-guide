@@ -1,0 +1,32 @@
+{
+  "description": "Age 22 with credit_balance 500 (the app's default). Under 25 the entitlement is $0, so validate() flags it. The user corrects it to 0 and the run continues.",
+  "profile": {
+    "role": "Accounts Executive",
+    "age": 22,
+    "residency": "citizen",
+    "status": "employed",
+    "credit_balance": 500
+  },
+  "answers": [
+    {
+      "credit_balance": 0
+    }
+  ],
+  "stop_at": "confirm_role",
+  "expect": {
+    "fake": {
+      "pauses": [
+        "ask_missing_info",
+        "confirm_role"
+      ],
+      "missing_contains": "credit_balance"
+    },
+    "real": {
+      "pauses": [
+        "ask_missing_info",
+        "confirm_role"
+      ],
+      "missing_contains": "credit_balance"
+    }
+  }
+}

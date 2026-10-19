@@ -1,0 +1,44 @@
+{
+  "description": "Accounts Executive (role 14) -> Data Analyst (role 723). Goal is in the framework, gap is 12 skills, full run to the final message.",
+  "profile": {
+    "role": "Accounts Executive",
+    "age": 41,
+    "residency": "citizen",
+    "status": "retrenched",
+    "goal": "move into data analyst",
+    "credit_balance": 500
+  },
+  "answers": [
+    {
+      "role_id": 14
+    },
+    {
+      "role_id": 723
+    },
+    {
+      "approved": true
+    }
+  ],
+  "expect": {
+    "fake": {
+      "pauses": [
+        "confirm_role",
+        "choose_path",
+        "approve_plan"
+      ],
+      "goal_status": "matched",
+      "gap_total": 12,
+      "done": true
+    },
+    "real": {
+      "pauses": [
+        "confirm_role",
+        "choose_path",
+        "approve_plan"
+      ],
+      "goal_status": "matched",
+      "gap_total": 12,
+      "done": true
+    }
+  }
+}
