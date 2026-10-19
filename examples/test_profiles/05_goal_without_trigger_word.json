@@ -1,0 +1,32 @@
+{
+  "description": "Goal written as just 'data analyst' (no 'into', 'become', 'be a'). The offline regex in llm_steps.read_profile misses it, so goal_status=none. Claude reads it as a goal.",
+  "profile": {
+    "role": "Accounts Executive",
+    "age": 35,
+    "residency": "pr",
+    "status": "employed",
+    "goal": "data analyst"
+  },
+  "answers": [
+    {
+      "role_id": 14
+    }
+  ],
+  "stop_at": "choose_path",
+  "expect": {
+    "fake": {
+      "pauses": [
+        "confirm_role",
+        "choose_path"
+      ],
+      "goal_status": "none"
+    },
+    "real": {
+      "pauses": [
+        "confirm_role",
+        "choose_path"
+      ],
+      "goal_status": "matched"
+    }
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "description": "Three unusable replies at confirm_role: unknown id, text, text with a number. Each re-asks with an error; the third failure raises.",
+  "profile": {
+    "role": "Accounts Executive",
+    "age": 35,
+    "residency": "citizen",
+    "status": "employed"
+  },
+  "answers": [
+    {
+      "role_id": "999999"
+    },
+    {
+      "role_id": "abc"
+    },
+    {
+      "role_id": "14x"
+    }
+  ],
+  "expect": {
+    "fake": {
+      "error_contains": "No valid role confirmed",
+      "payload_error_contains": "Invalid answer"
+    },
+    "real": {
+      "error_contains": "No valid role confirmed",
+      "payload_error_contains": "Invalid answer"
+    }
+  }
+}

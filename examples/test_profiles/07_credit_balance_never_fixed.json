@@ -1,0 +1,29 @@
+{
+  "description": "Same profile as 06, but the user keeps confirming 500. After MAX_ASKS (3) answers the run stops.",
+  "profile": {
+    "role": "Accounts Executive",
+    "age": 22,
+    "residency": "citizen",
+    "status": "employed",
+    "credit_balance": 500
+  },
+  "answers": [
+    {
+      "credit_balance": 500
+    },
+    {
+      "credit_balance": 500
+    },
+    {
+      "credit_balance": 500
+    }
+  ],
+  "expect": {
+    "fake": {
+      "error_contains": "Still missing after 3 asks"
+    },
+    "real": {
+      "error_contains": "Still missing after 3 asks"
+    }
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "description": "'asdfgh' matches nothing (best title score about 0.21). No suggestion; user must choose from the shortlist.",
+  "profile": {
+    "role": "asdfgh",
+    "age": 38,
+    "residency": "other",
+    "status": "employed"
+  },
+  "stop_at": "confirm_role",
+  "expect": {
+    "fake": {
+      "pauses": [
+        "confirm_role"
+      ],
+      "suggested_role_id": null
+    },
+    "real": {
+      "pauses": [
+        "confirm_role"
+      ],
+      "suggested_role_id": null
+    }
+  }
+}
