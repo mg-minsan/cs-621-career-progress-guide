@@ -52,7 +52,7 @@ def get_graph():
         g.get_index()                              # warm the course index once
     except SearchError as e:                       # app only: fall back so a teammate can still try it
         os.environ["CAREER_SEARCH_MODE"] = "bm25"  # (the evals never fall back; they fail loudly)
-        g._INDEX = None
+        g.course_agent.reset_index()
         g.get_index()
         note = f"Meaning search unavailable ({e}). Using keyword search (BM25) only."
     return g.build(), g, note

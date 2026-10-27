@@ -1,5 +1,5 @@
 {
-  "_about": "E3 funding cases. Expected values were worked out BY HAND from the rules in src/funding.py docstring, NOT by running the calculator. Team: re-check each line with a calculator before trusting it.",
+  "_about": "E4 funding cases. Expected values were worked out BY HAND from the rules in src/funding.py docstring, NOT by running the calculator. Team: re-check each line with a calculator before trusting it.",
   "cases": [
     {"id": "f01", "tags": ["citizen", "credit"],          "person": {"residency": "citizen", "age": 30, "credit_balance": 500},  "full_fee": 1000,    "tier": "tier1", "use_credit": true,  "expected": {"subsidy": 700,     "fee_after_subsidy": 300,    "credit_used": 300, "out_of_pocket": 0,      "needs_user_input": false}},
     {"id": "f02", "tags": ["citizen"],                    "person": {"residency": "citizen", "age": 30, "credit_balance": 0},    "full_fee": 1000,    "tier": "tier1", "use_credit": true,  "expected": {"subsidy": 700,     "fee_after_subsidy": 300,    "credit_used": 0,   "out_of_pocket": 300,    "needs_user_input": false}},

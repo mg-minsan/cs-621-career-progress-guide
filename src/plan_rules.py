@@ -5,7 +5,7 @@ STEP 5 - Plan rules, all in code.
   validate_order  checks an AI-proposed order: same skills, lower levels first
   choose_course   best match wins; if the runner-up is CLOSE and CHEAPER, it wins
                   (a soft constraint: it ranks, it never rejects)
-  check_plan      postconditions on the finished plan (also eval E5)
+  check_plan      postconditions on the finished plan (also eval E6)
 """
 from __future__ import annotations
 

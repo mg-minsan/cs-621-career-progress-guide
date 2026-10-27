@@ -1,0 +1,46 @@
+{
+ "ai_version_used_for_gold": "v1",
+ "rows_total": 186,
+ "rows_ai_labelled": 186,
+ "sample_size": 50,
+ "agreement": {
+  "A vs B (human-human)": {
+   "kappa": null,
+   "n": 0,
+   "raw_agreement": null
+  },
+  "AI v1 vs A": {
+   "kappa": null,
+   "n": 0,
+   "raw_agreement": null
+  },
+  "AI v1 vs B": {
+   "kappa": null,
+   "n": 0,
+   "raw_agreement": null
+  }
+ },
+ "gold_relevant_rate": 0.855,
+ "precision": {
+  "bm25": {
+   "P@1": 0.8666666666666667,
+   "P@3": 0.8444444444444444,
+   "P@5": 0.8533333333333334
+  },
+  "dense": {
+   "P@1": 0.8666666666666667,
+   "P@3": 0.8444444444444444,
+   "P@5": 0.84
+  },
+  "hybrid": {
+   "P@1": 0.9333333333333333,
+   "P@3": 0.8666666666666667,
+   "P@5": 0.8533333333333334
+  },
+  "hybrid_rerank": {
+   "P@1": 1.0,
+   "P@3": 0.9333333333333333,
+   "P@5": 0.88
+  }
+ }
+}

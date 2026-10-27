@@ -47,20 +47,23 @@ source .venv/bin/activate && streamlit run src/app.py
 
 - Each teammate uses **their own** key from https://console.anthropic.com, in `.env`
   (`ANTHROPIC_API_KEY=sk-ant-...`). `.env` is git-ignored: **never commit it, never paste it in chat.**
-- One plan in the app costs about **$0.02**. A full evaluation run costs about **$1.70**.
+- One plan in the app costs about **$0.04** (measured 2026-10-24; up to $0.15 for a 49-skill gap list).
+  A full evaluation run cost about **$1.70** before the two agents were added. Expect more now: E3 alone costs about $0.39 per repetition.
 - No key? Switch on **Offline demo** in the sidebar: the rules-only version, free, no internet needed.
 
 ---
 
 ## Everyday commands
 
+For a walkthrough of E1–E6, label preparation, commands and result interpretation, see the [evaluation guide](docs/evaluation.md).
+
 | What | Docker | Local (venv active) |
 |---|---|---|
 | Run the app | `docker compose up` | `streamlit run src/app.py` |
 | Tests (offline, free, ~1 min) | `docker compose run --rm app pytest -q` | `python -m pytest tests -q` |
 | Agent in the terminal | `docker compose run --rm app python src/run_cli.py examples/accounts_exec.json` | `python src/run_cli.py examples/accounts_exec.json` |
-| Quick eval (~$0.40) | `docker compose run --rm app python src/run_evals.py --quick` | `python src/run_evals.py --quick` |
-| Full eval (~$1.70, 30-40 min) | `docker compose run --rm app python src/run_evals.py` | `python src/run_evals.py` |
+| Quick eval (> $0.40) | `docker compose run --rm app python src/run_evals.py --quick` | `python src/run_evals.py --quick` |
+| Full eval (> $1.70, 30-40+ min) | `docker compose run --rm app python src/run_evals.py` | `python src/run_evals.py` |
 
 Eval reports go to `results/eval_report.md`. **Each run overwrites `results/`**, so rename the folder
 (e.g. `results_v3`) before running again if you want to keep the old one.
@@ -70,12 +73,13 @@ Eval reports go to `results/eval_report.md`. **Each run overwrites `results/`**,
 ```
 src/
   app.py            Streamlit app (the 4 checkpoints)        ui_art.py   icons + styling
-  graph.py          the LangGraph agent (nodes, interrupts)  llm_steps.py  the 3 Claude decisions
+  graph.py          the LangGraph agent (nodes, interrupts)  llm_steps.py  the 6 Claude decisions
+  skill_gap_agent.py  gaps -> labels -> order (own graph)     course_agent.py  search -> rewrite -> pick (own graph)
   lookups.py        role search, skill gaps                   funding.py  subsidy + credit calculator
   course_search.py  BM25 + embeddings + re-ranker             plan_rules.py  phases, plan checks
-  run_evals.py      E1-E5 evaluation harness                  harness.py  run_eval harness
+  run_evals.py      E1-E6 evaluation harness                  harness.py  run_eval harness
   data_prep.py      builds data/careers.db from data/raw      settings.py loads .env
-evals/              test cases (E1 personas, E3 funding, E4 boundary)
+evals/              test cases (E1 personas, E4 funding, E5 boundary)
 results/            evaluation reports
 data/raw/           the 4 SkillsFuture spreadsheets
 data/index/         course search vectors (in git, so nobody has to rebuild them)
@@ -106,12 +110,12 @@ data/careers.db     built automatically from data/raw (not in git: 101 MB, too b
 | Step | What you build | Key idea | Done when |
 |---|---|---|---|
 | **1. Data layer** ✅ | SQLite DB + lookup functions (`find_roles`, `nearby_roles`, `skill_gap`) | tools fail loudly, rules in code | tests pass |
-| **2. Answer keys first** ✅ (E3 + E4 written) | Funding rule engine + eval cases E3 (funding) and E4 (boundary), written *before* any agent | no contamination | 20 + 10 cases with hand-checked answers |
+| **2. Answer keys first** ✅ (E4 + E5 written) | Funding rule engine + eval cases E4 (funding) and E5 (boundary), written *before* any agent | no contamination | 20 + 10 cases with hand-checked answers |
 | **3. Agent skeleton** ✅ | LangGraph `StateGraph`: 5 nodes, `interrupt()` at confirm-role, choose-path, approve-plan; Pydantic structured output | graphs, interrupts, schemas | one profile runs end to end in a script |
 | **4. Course search** ✅ | Hybrid search (BM25 + embeddings) + re-ranker; fallback: broaden → wider → "search this skill yourself" | retrieval, Dumpling | E2 labels done, precision@5 measured |
-| **5. Plan + costing** ✅ | Order gaps into start → build → stand out; apply funding calculator; write `plan.json` | planning, verification | E5 property checks pass |
+| **5. Plan + costing** ✅ | Order gaps into start → build → stand out; apply funding calculator; write `plan.json` | planning, verification | E6 property checks pass |
 | **6. Streamlit viewer** | Pause/resume the graph per checkpoint using `thread_id` + checkpointer | threads, `Command(resume=…)` | a user can click through all 3 checkpoints |
-| **7. Eval harness** ✅ | `run_eval` over E1–E5, k = 3 runs, two baselines | measurement | results table with mean ± sd |
+| **7. Eval harness** ✅ | `run_eval` over E1–E6, k = 3 runs, two baselines | measurement | results table with mean ± sd |
 | **8. Prove it** | Ablations, failure analysis, "what we tried but didn't use", report | evaluation, verification | final slides |
 
 ## Design decisions already made (Step 1)
@@ -125,7 +129,7 @@ data/careers.db     built automatically from data/raw (not in git: 101 MB, too b
 ## Step 2 notes
 
 - `src/funding.py`: subsidy tiers + SkillsFuture Credit, rules and sources in the docstring (`RULES_CHECKED_ON`).
-- `evals/e3_funding.json`: 20 hand-worked cases. **Re-check each by hand before trusting.**
+- `evals/e4_funding.json`: 20 hand-worked cases. **Re-check each by hand before trusting.**
 - Data finding: listed fee ÷ full fee is 0.30 (Tier 1), 0.50 (Tier 2) or 1.00 (none) for 99.6% of courses, so the tier is inferred from the data.
 - Second-source check: for a citizen under 40, the calculator reproduces the directory's own listed after-subsidy fee for every tiered course.
 
@@ -161,28 +165,25 @@ py src/course_search.py "Data Governance"
 
 - `order_skills` [AI]: orders same-level skills, foundations first. Code rejects any order that drops/invents/repeats a skill or puts a higher level first, and falls back to the rule order (logged in `notes`).
 - `plan` [code]: one course per skill (best match; a CLOSE and CHEAPER runner-up wins, `CAREER_CLOSE_MARGIN`, placeholder 1.0), phases, plan-wide cost with SkillsFuture Credit applied ONCE, total hours.
-- `check_plan` postconditions (= eval E5) run on every plan; a failing plan raises instead of being shown.
+- `check_plan` postconditions (= eval E6) run on every plan; a failing plan raises instead of being shown.
 - Unknown fees: a few courses have no listed after-subsidy fee, or a ratio matching no tier (e.g. 0.70). They show "unknown" and are left out of the total, with a note.
 - In `bm25` mode there are no match scores, so price never overrides relevance (no confidence, no trade-off).
 
-## Step 7a: labelling (TEAM WORK, do before running the agent on these cases)
+## E2: course relevance with LLM judges
 
-E2 courses:
-```powershell
-py src/make_e2_sheet.py      # all 4 search modes, ~1 min
+The current evaluation uses three AI votes per course–skill pair: existing `gpt-mini-5` annotations, DeepSeek V4 Pro and Claude Sonnet 5.5. No human labellers or sampled-row voting are used.
+
+```bash
+# Recalculate scores from completed judgments (no API calls):
+python src/score_e2.py
+
+# Resume missing judgments (paid calls for missing rows only):
+python src/e2_llm_judge.py --models deepseek:deepseek-v4-pro anthropic:claude-sonnet-5-5 --include-existing-ai
 ```
-Two people each fill `labels/E2_labeller_A.xlsx` / `_B.xlsx` ALONE (column `relevant`, Y/N). Read the `instructions` tab first.
 
-E1 paths: fill every `labels` block in `evals/e1_personas.json` from the sector guide career maps. Look up ids with `py src/find_role_id.py "Data Analyst"`.
+Judgments are stored in `labels/e2_llm_judges.json`; metrics go to `results/e2_llm_results.json`. Model-named Excel files are readable copies. The scorer requires complete votes, uses majority voting on every row and reports model agreement. See the [evaluation guide](docs/evaluation.md#4-e2-course-search-relevance) for setup, limitations and fresh runs.
 
-Finding while building this: the "Trisector Strategy ... (Data Collection and Analysis)" course really is a Data Collection module. We had assumed it was a bad match. Only labels settle these.
-
-## Step 7b-1/2: E2 with AI-assisted labels
-
-1. Copy `labels/E2_labeller_A.xlsx` to `labels/E2_labeller_AI.xlsx`; ChatGPT labels ALL rows of the AI file.
-2. `py src/e2_sample.py` marks ~50 rows (orange `LABEL_THIS` column) in A and B. Two teammates label only those, alone, without seeing ChatGPT's answers.
-3. `py src/score_e2.py --tune` prints: agreement (kappa) A-B, AI-A, AI-B; precision@1/3/5 per search mode; suggested WEAK/STRONG thresholds.
-Gold rule: sample rows = majority of A, B, AI; other rows = AI label. Report this.
+E1 uses labelled personas in `evals/e1_personas.json`; its label generation and audit are described below.
 
 ## Step 7c: run the evaluation
 
@@ -194,18 +195,18 @@ py src/run_evals.py                # the real thing: 3 runs (~$1-2, 20-40 min)
 Writes `results/eval_report.md` (tables for the report) and `results/eval_results.json` (raw data).
 
 - E1 only runs personas whose labels are filled in `evals/e1_personas.json` (unlabelled ones are skipped, never run).
-- Systems: `agent` (Claude + graph), `rules` (graph, no LLM = baseline 2), `single` (Claude, one call, no tools = baseline 1). E3 compares the calculator with Claude doing the maths from the same rules.
+- Systems: `agent` (Claude + graph), `rules` (graph, no LLM = baseline 2), `single` (Claude, one call, no tools = baseline 1). E4 compares the calculator with Claude doing the maths from the same rules.
 - The simulated user (docstring of `src/run_evals.py`) auto-approves plans. Say so in the report.
-- Added before any eval run: E4 `must_flag_out_of_scope` (b01, b07, b08), and the agent now tells the user when a stated goal is not in the framework (E1 p12).
+- Added before any eval run: E5 `must_flag_out_of_scope` (b01, b07, b08), and the agent now tells the user when a stated goal is not in the framework (E1 p12).
 
 ## Step 7c findings from quick run 1 (2026-10-13), and what changed
 
 - Bug: Sonnet 5.5 replies are a list of blocks [thinking, text]; the single-call baseline stored str(list), so the thinking signature leaked into the graded text. Fixed: `baselines.visible_text`. Re-run the single-call numbers.
 - Bug: a curly apostrophe (can’t) did not match "can't", so b07 wrongly failed "flagged_out_of_scope" for the baseline. Fixed: graders normalise text (`norm`).
 - b03 never reached costing: the injected text broke the role shortlist (no Accountant in it), Claude correctly suggested nothing (confidence 0.05), and the run stopped. Added `user_role_id: 13` (the role a real user would click) so the funding check actually runs.
-- E4 did not discriminate: the no-LLM rules baseline passed 10/10, because stopping and the fixed final message are in the graph code. Added b11-b13: the same out-of-scope requests without the words enrol/apply/fake.
+- E5 did not discriminate: the no-LLM rules baseline passed 10/10, because stopping and the fixed final message are in the graph code. Added b11-b13: the same out-of-scope requests without the words enrol/apply/fake.
 - Single-call checks named `info:` (e.g. "asked for missing info") are reported but do not decide pass/fail.
-- E3: Claude did the maths right on 20/20 in one run. The calculator's case rests on cost ($0 vs $0.0023/case), speed, and being a guarantee rather than an observation. Report that honestly.
+- E4: Claude did the maths right on 20/20 in one run. The calculator's case rests on cost ($0 vs $0.0023/case), speed, and being a guarantee rather than an observation. Report that honestly.
 
 ## E1 answer key: auto labels from the framework (chosen approach, 2026-10-17)
 
@@ -231,7 +232,7 @@ py src/e1_sheet.py load     # after filling it: writes labels into evals/e1_pers
 
 ## Step 8a: full run 1 (2026-10-18, 3 runs) and fixes from its failure analysis
 
-Run 1 (keep it as `results_v1/`): E1 agent 78% ± 5% (pass^3 75%), single call 75%, rules 8% · E3 100% both · E4 agent 100%, rules 77%, single 8% · E5 100% · $1.67.
+Run 1 (keep it as `results_v1/`): E1 agent 78% ± 5% (pass^3 75%), single call 75%, rules 8% · E4 100% both · E5 agent 100%, rules 77%, single 8% · E6 100% · $1.67.
 
 Agent failures on E1, read from `eval_results.json`:
 - p11 (3/3) CRASH: `order_skills` got 49 skill gaps; the reply hit max_tokens=1500 (thinking counts) and lost the `reason` field; the ValueError was not caught. Fix: `graph.order_skills` falls back to the rule order and logs it; max_tokens 4000.

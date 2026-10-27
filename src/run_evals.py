@@ -3,30 +3,35 @@ STEP 7c - Run the evaluation and write the results table.
 
     py src/run_evals.py                       # everything, 3 runs (~$1-2 of API calls, 20-40 min)
     py src/run_evals.py --quick               # 1 run, to check it works first
-    py src/run_evals.py --evals e4 --systems agent,rules
+    py src/run_evals.py --evals e5 --systems agent,rules
+    py src/run_evals.py --evals e3 --systems agent,rules   # the two agents on their own
     py src/run_evals.py --cases b01,b06       # only these cases
 
-Evals (the proposal's E1-E5; E2 is scored separately by score_e2.py)
+Evals (E2 is scored separately by score_e2.py)
   E1 paths      : right current role, a realistic path, no forbidden path, goal handled
-  E3 funding    : cost exact to the cent
-  E4 boundary   : stops where it must, never claims actions, injections change nothing
-  E5 plan checks: every finished plan passes its postconditions
+  E3 agents     : each agent alone, on FIXED inputs (so a failure points at one agent)
+    E3a skill-gap agent : gap list exact, its own order valid, every gap labelled
+    E3b course agent    : raw pick from its own list; headline metrics: no fallback, pick judged
+                          relevant (E2 labels), skills rescued by rewritten queries
+  E4 funding    : cost exact to the cent
+  E5 boundary   : stops where it must, never claims actions, injections change nothing
+  E6 plan checks: every finished plan passes its postconditions
 
 Systems
   agent   : the full graph with Claude (CAREER_MODEL)
   rules   : the same graph, no LLM (CAREER_FAKE=1)            = baseline 2
   single  : Claude in one call, no tools/graph/calculator     = baseline 1
-  (E3 compares "calculator" with "single")
+  (E4 compares "calculator" with "single"; E3 runs agent and rules only)
 
 SIMULATED USER (state this in the report - it shapes every number)
-  ask_missing_info : abandons (E4 checks the agent STOPPED, not what happens next)
+  ask_missing_info : abandons (E5 checks the agent STOPPED, not what happens next)
   confirm_role     : E1 -> picks the labelled role (a real user knows their job)
-                     E4 -> the case's user_role_id if given (b03); else accepts the
+                     E5 -> the case's user_role_id if given (b03); else accepts the
                            agent's suggestion; if there is none, picks the top
                            candidate only when its name clearly matches (score >= 0.8),
                            else abandons (a trusting user: tests whether the AGENT guesses)
   choose_path      : E1 -> first shown path the labels call acceptable, else the first
-                     E4 -> the first path
+                     E5 -> the first path
   approve_plan     : approves (auto-approval)
 The labels are only read by this simulated user; the agent never sees them.
 
@@ -78,7 +83,7 @@ def simulated_answer(payload: dict, suite: str, labels: dict | None):
     if cp == "ask_missing_info":
         return None
     if cp == "confirm_role":
-        if labels and labels.get("current_role_id"):     # E1 labels, or an E4 case's user_role_id
+        if labels and labels.get("current_role_id"):     # E1 labels, or an E5 case's user_role_id
             return {"role_id": labels["current_role_id"]}
         if payload["suggested_role_id"]:
             return {"role_id": payload["suggested_role_id"]}
@@ -189,19 +194,159 @@ def e1_fn(system: str):
 
 
 # =========================================================================
-# E3 - funding
+# E3 - the two agents on their own (fixed inputs, no upstream graph)
+# =========================================================================
+GAP_KEYS = ("skill", "type", "need_level", "have_level", "status")
+E3A_EXTRA = [("stress-49", 1056, 1059)]      # F&B Supervisor -> Restaurant Manager: 49 gaps (E1 p11)
+E3B_PERSON = {"residency": "citizen", "age": 35}
+
+
+def _set_fake(fake: bool) -> None:
+    if fake:
+        os.environ["CAREER_FAKE"] = "1"
+    else:
+        os.environ.pop("CAREER_FAKE", None)
+
+
+def _agent_result(out: dict, t0: float, details: dict) -> AgentResult:
+    usage = out["usage"]
+    return AgentResult(tool_calls=[u.get("step", "") for u in usage], steps=len(usage),
+                       input_tokens=sum(u.get("input_tokens", 0) for u in usage),
+                       output_tokens=sum(u.get("output_tokens", 0) for u in usage),
+                       cost_usd=sum(u.get("cost_usd", 0) for u in usage),
+                       latency_s=time.perf_counter() - t0, details=details)
+
+
+def load_e3a(only: set[str] | None) -> list[Case]:
+    """Inputs: each labelled E1 persona's role and its first acceptable path, plus a stress case."""
+    data = json.loads((EVALS / "e1_personas.json").read_text(encoding="utf-8"))
+    rows = [(p["id"], p["labels"]["current_role_id"], p["labels"]["acceptable_path_ids"][0])
+            for p in data["personas"]
+            if p["labels"].get("current_role_id") is not None and p["labels"].get("acceptable_path_ids")]
+    cases = [Case(cid, {"current_role_id": cur, "target_role_id": tgt},
+                  tags=["stress"] if cid.startswith("stress") else ["e1_pair"])
+             for cid, cur, tgt in rows + E3A_EXTRA]
+    return [c for c in cases if not only or c.id in only]
+
+
+def e3a_fn(system: str):
+    def fn(inp: dict) -> AgentResult:
+        import skill_gap_agent
+        _set_fake(system == "rules")
+        t0 = time.perf_counter()
+        out = skill_gap_agent.run(inp["current_role_id"], inp["target_role_id"])
+        return _agent_result(out, t0, {"gaps": out["gaps"], "skill_order": out["skill_order"],
+                                       "fallbacks": out["fallbacks"], "notes": out["notes"]})
+    return fn
+
+
+def grade_e3a(case: Case, r: AgentResult) -> bool:
+    from lookups import skill_gap
+    from plan_rules import validate_order
+    d, inp = r.details, case.input
+    gaps, fb = d["gaps"], d["fallbacks"]
+    hard = {"gaps_exact": [{k: g[k] for k in GAP_KEYS} for g in gaps]
+                          == skill_gap(inp["current_role_id"], inp["target_role_id"]),
+            # the AGENT's own order: a code fallback hides a bad one, so it does not count
+            "order_valid": "order_skills" not in fb and validate_order(d["skill_order"], gaps) is None,
+            "labels_complete": "explain_gaps" not in fb and all(
+                g.get("importance") in ("core", "supporting") and g.get("why") for g in gaps)}
+    r.checks = {**hard, "metric_no_fallback": not fb}
+    return all(hard.values())
+
+
+def load_e3b(only: set[str] | None) -> list[Case]:
+    """Inputs: the E2 pool's skills (they have judged relevance labels), one fixed person."""
+    pool = json.loads((EVALS / "e2_pool.json").read_text(encoding="utf-8"))
+    cases = [Case(skill, {"skill": skill, "person": E3B_PERSON}, tags=["e2_skill"]) for skill in pool["skills"]]
+    return [c for c in cases if not only or c.id in only]
+
+
+_E2_GOLD: dict | None = None
+
+
+def e2_gold() -> dict[tuple[str, str], str]:
+    """(skill, course_ref) -> Y/N: the same LLM-majority labels score_e2.py uses."""
+    global _E2_GOLD
+    if _E2_GOLD is None:
+        from score_e2 import llm_consensus
+        path = ROOT / "labels" / "e2_llm_judges.json"
+        data = json.loads(path.read_text(encoding="utf-8")) if path.exists() else None
+        _E2_GOLD = {}
+        if data:
+            gold, _ = llm_consensus(data)
+            pair = {int(row["row_id"]): (row["skill"], row["course_ref"]) for row in data["rows"]}
+            _E2_GOLD = {pair[rid]: lab for rid, lab in gold.items()}
+    return _E2_GOLD
+
+
+def e3b_fn(system: str):
+    def fn(inp: dict) -> AgentResult:
+        import course_agent
+        _set_fake(system == "rules")
+        t0 = time.perf_counter()
+        out = course_agent.run([inp["skill"]], inp["person"])
+        return _agent_result(out, t0, {"found": out["courses"][inp["skill"]],
+                                       "fallbacks": out["fallbacks"], "notes": out["notes"]})
+    return fn
+
+
+def grade_e3b(case: Case, r: AgentResult) -> bool:
+    from funding import infer_tier
+    found, fb, inp = r.details["found"], r.details["fallbacks"], case.input
+    cands = found["courses"]
+    refs = [c["course_ref"] for c in cands]
+    person = Person(inp["person"]["residency"], inp["person"]["age"])
+
+    def fee_ok(c: dict) -> bool:
+        try:
+            want = course_cost(person, c["full_fee"], infer_tier(c["full_fee"], c["fee_after_subsidy"]),
+                               use_credit=False).out_of_pocket
+        except FundingError:
+            want = None
+        return c.get("your_fee") == want
+    # Grade the AI before code repairs its answer. Fees remain a code invariant,
+    # not evidence of model quality.
+    hard = {"pick_in_menu": (found.get("raw_chosen_ref") in refs) if cands else "chosen_ref" not in found}
+    checks = {**hard, "info:fees_correct": all(fee_ok(c) for c in cands),
+              "metric_no_fallback": not fb}
+    if found["status"] in ("rewritten", "no_strong_match"):          # the first search missed
+        checks["metric_rescued"] = found["status"] == "rewritten"
+    if found.get("chosen_ref"):
+        lab = e2_gold().get((inp["skill"], found["chosen_ref"]))
+        checks["metric_pick_labelled"] = lab is not None
+        if lab is not None:
+            checks["metric_pick_relevant"] = lab == "Y"
+    r.checks = checks
+    return all(hard.values())
+
+
+def order_stability(rep: Report) -> str | None:
+    """Share of E3a cases whose skill order was the same in every run."""
+    orders: dict[str, set] = {}
+    for o in rep.outcomes:
+        if o.result.details.get("skill_order") is not None:
+            orders.setdefault(o.case_id, set()).add(tuple(o.result.details["skill_order"]))
+    if rep.n_runs < 2 or not orders:
+        return None
+    same = sum(len(v) == 1 for v in orders.values())
+    return f"order_stable: {same}/{len(orders)} cases gave the same order in all {rep.n_runs} runs"
+
+
+# =========================================================================
+# E4 - funding
 # =========================================================================
 FUNDING_FIELDS = ("subsidy", "fee_after_subsidy", "credit_used", "out_of_pocket", "needs_user_input")
 
 
-def load_e3(only: set[str] | None) -> list[Case]:
-    data = json.loads((EVALS / "e3_funding.json").read_text(encoding="utf-8"))
+def load_e4(only: set[str] | None) -> list[Case]:
+    data = json.loads((EVALS / "e4_funding.json").read_text(encoding="utf-8"))
     return [Case(c["id"], {k: c[k] for k in ("person", "full_fee", "tier", "use_credit")},
                  expected=c["expected"], tags=c.get("tags", []))
             for c in data["cases"] if not only or c["id"] in only]
 
 
-def grade_e3(case: Case, r: AgentResult) -> bool:
+def grade_e4(case: Case, r: AgentResult) -> bool:
     got = r.details.get("answer", {})
     checks = {}
     for k, want in case.expected.items():
@@ -211,7 +356,7 @@ def grade_e3(case: Case, r: AgentResult) -> bool:
     return all(checks.values())
 
 
-def e3_fn(system: str):
+def e4_fn(system: str):
     def fn(inp: dict) -> AgentResult:
         t0 = time.perf_counter()
         if system == "single":
@@ -226,7 +371,7 @@ def e3_fn(system: str):
 
 
 # =========================================================================
-# E4 - boundary
+# E5 - boundary
 # =========================================================================
 ASKS_FOR = ("residen", "citizen", "age", "how old", "credit balance", "balance")
 ASKING = ("?", "please check", "please confirm", "tell me", "let me know")
@@ -247,14 +392,14 @@ def counted(checks: dict) -> bool:
     return all(v for k, v in checks.items() if not k.startswith("info:"))
 
 
-def load_e4(only: set[str] | None) -> list[Case]:
-    data = json.loads((EVALS / "e4_boundary.json").read_text(encoding="utf-8"))
+def load_e5(only: set[str] | None) -> list[Case]:
+    data = json.loads((EVALS / "e5_boundary.json").read_text(encoding="utf-8"))
     return [Case(c["id"], {"profile": c["profile"], "user_role_id": c.get("user_role_id")},
                  expected=c["expect"], tags=c.get("tags", []))
             for c in data["cases"] if not only or c["id"] in only]
 
 
-def grade_e4(case: Case, r: AgentResult) -> bool:
+def grade_e5(case: Case, r: AgentResult) -> bool:
     e, d, checks = case.expected, r.details, {}
     text = norm(d.get("user_text") or r.output or "")
     single = d.get("system") == "single"
@@ -282,7 +427,7 @@ def grade_e4(case: Case, r: AgentResult) -> bool:
     return counted(checks)
 
 
-def e4_fn(system: str):
+def e5_fn(system: str):
     def fn(inp: dict) -> AgentResult:
         if system == "single":
             import baselines
@@ -291,14 +436,14 @@ def e4_fn(system: str):
             return AgentResult(output=text, steps=1, **usage, latency_s=time.perf_counter() - t0,
                                details={"system": "single", "user_text": text})
         user = {"current_role_id": inp["user_role_id"]} if inp.get("user_role_id") else None
-        return run_graph(inp["profile"], "e4", user, fake=(system == "rules"))
+        return run_graph(inp["profile"], "e5", user, fake=(system == "rules"))
     return fn
 
 
 # =========================================================================
-# E5 - postconditions on every plan the graph systems produced
+# E6 - postconditions on every plan the graph systems produced
 # =========================================================================
-def e5_from(reports: list[Report], system_name: str) -> Report | None:
+def e6_from(reports: list[Report], system_name: str) -> Report | None:
     outcomes = []
     for rep in reports:
         for o in rep.outcomes:
@@ -319,12 +464,12 @@ def e5_from(reports: list[Report], system_name: str) -> Report | None:
                           "unknown_fees_flagged": plan["cost"]["unknown_cost_courses"] == sum(
                               1 for c in courses if c.get("your_fee") is None)}
             else:
-                continue                                  # run stopped before a plan: not an E5 case
+                continue                                  # run stopped before a plan: not an E6 case
             res = AgentResult(checks=checks)
-            outcomes.append(CaseOutcome(o.case_id, all(checks.values()), o.run_index, res, ["e5"]))
+            outcomes.append(CaseOutcome(o.case_id, all(checks.values()), o.run_index, res, ["e6"]))
     if not outcomes:
         return None
-    return Report(f"E5 plan checks [{system_name}]", outcomes, max(o.run_index for o in outcomes) + 1)
+    return Report(f"E6 plan checks [{system_name}]", outcomes, max(o.run_index for o in outcomes) + 1)
 
 
 # =========================================================================
@@ -340,7 +485,7 @@ def write_report(groups: dict[str, list[Report]], meta: dict) -> str:
     L = [f"# Evaluation results", "",
          f"Run {meta['when']} · model `{meta['model']}` · search `{meta['search']}` · "
          f"{meta['runs']} run(s) per case · thresholds WEAK={WEAK_MATCH}, STRONG={STRONG_MATCH}", "",
-         "Simulated user: abandons at ask_missing_info; E1 confirms the labelled role; E4 accepts the "
+         "Simulated user: abandons at ask_missing_info; E1 confirms the labelled role; E5 accepts the "
          "agent's suggestion (else the top candidate if its name match >= 0.8, else abandons); "
          "picks the first acceptable path; auto-approves plans.", "",
          "| Eval [system] | cases | pass mean ± sd | pass^k | cost/task | latency/task |",
@@ -352,9 +497,24 @@ def write_report(groups: dict[str, list[Report]], meta: dict) -> str:
         for r in reps:
             L += ["", f"### {r.name}", "", "```", r.render(baseline=reps[0] if r is not reps[0] else None), "```"]
             cr = r.check_rates()
+            if r.name.startswith("E3b"):
+                L += ["", "**AI quality (headline):**"]
+                for key in ("metric_no_fallback", "metric_pick_relevant"):
+                    if key in cr:
+                        p, n = cr[key]
+                        L += [f"- {key}: {p}/{n} ({p / n:.0%})"]
+                    else:
+                        L += [f"- {key}: N/A (no judged picks)"]
+                L += ["Relevance is conditional on labelled picks; see metric_pick_labelled for coverage. "
+                      "pick_in_menu grades the raw AI pick, before fallback; fees are a code invariant."]
             if cr:
                 L += ["", "| check | passed |", "|---|---|"]
                 L += [f"| {k} | {p}/{n} ({p / n:.0%}) |" for k, (p, n) in cr.items()]
+                if any(k.startswith("metric_") for k in cr):
+                    L += ["", "`metric_*` rows are measured, not pass/fail: they do not decide the pass rate."]
+            stable = order_stability(r) if r.name.startswith("E3a") else None
+            if stable:
+                L += ["", stable]
             fails = r.failures()
             if fails:
                 L += ["", "First failures (read these before changing anything):"]
@@ -367,7 +527,7 @@ def write_report(groups: dict[str, list[Report]], meta: dict) -> str:
 # =========================================================================
 def main(argv: list[str]) -> None:
     arg = lambda flag, default: argv[argv.index(flag) + 1] if flag in argv else default
-    evals = arg("--evals", "e1,e3,e4,e5").split(",")
+    evals = arg("--evals", "e1,e3,e4,e5,e6").split(",")
     systems = arg("--systems", "agent,rules,single").split(",")
     runs = 1 if "--quick" in argv else int(arg("--runs", "3"))
     only = set(arg("--cases", "").split(",")) - {""} or None
@@ -375,7 +535,7 @@ def main(argv: list[str]) -> None:
     if needs_api and not os.getenv("ANTHROPIC_API_KEY"):
         sys.exit("ANTHROPIC_API_KEY is not set. Set it, or run with --systems rules.")
 
-    if any(s in systems for s in ("agent", "rules")) and {"e1", "e4"} & set(evals):
+    if any(s in systems for s in ("agent", "rules")) and {"e1", "e3", "e5"} & set(evals):
         from graph import get_index
         print("Loading course search models (once)...")
         get_index()                                  # so model loading is not timed as latency
@@ -398,27 +558,37 @@ def main(argv: list[str]) -> None:
                     graph_reports[s].append(rep)
 
     if "e3" in evals:
-        cases = load_e3(only)
-        groups["E3 funding"] = [run_eval(e3_fn("calculator"), cases, grade_e3, runs, "E3 [calculator]",
-                                         progress=False)]
-        if "single" in systems:
-            groups["E3 funding"].append(run_eval(e3_fn("single"), cases, grade_e3, runs,
-                                                 "E3 [Claude does the maths]"))
+        agent_systems = [s for s in systems if s in ("agent", "rules")]   # no single-call version of an agent
+        cases_a, cases_b = load_e3a(only), load_e3b(only)
+        if cases_a:
+            groups["E3a skill-gap agent"] = [run_eval(e3a_fn(s), cases_a, grade_e3a, runs, f"E3a [{label_of[s]}]")
+                                             for s in agent_systems]
+        if cases_b:
+            groups["E3b course agent"] = [run_eval(e3b_fn(s), cases_b, grade_e3b, runs, f"E3b [{label_of[s]}]")
+                                          for s in agent_systems]
 
     if "e4" in evals:
         cases = load_e4(only)
-        groups["E4 boundary"] = []
+        groups["E4 funding"] = [run_eval(e4_fn("calculator"), cases, grade_e4, runs, "E4 [calculator]",
+                                         progress=False)]
+        if "single" in systems:
+            groups["E4 funding"].append(run_eval(e4_fn("single"), cases, grade_e4, runs,
+                                                 "E4 [Claude does the maths]"))
+
+    if "e5" in evals:
+        cases = load_e5(only)
+        groups["E5 boundary"] = []
         for s in systems:
-            rep = run_eval(e4_fn(s), cases, grade_e4, runs, f"E4 [{label_of[s]}]")
-            groups["E4 boundary"].append(rep)
+            rep = run_eval(e5_fn(s), cases, grade_e5, runs, f"E5 [{label_of[s]}]")
+            groups["E5 boundary"].append(rep)
             if s in graph_reports:
                 graph_reports[s].append(rep)
 
-    if "e5" in evals:
-        e5 = [r for s, reps in graph_reports.items() if reps
-              for r in [e5_from(reps, label_of[s])] if r]
-        if e5:
-            groups["E5 plan checks"] = e5
+    if "e6" in evals:
+        e6 = [r for s, reps in graph_reports.items() if reps
+              for r in [e6_from(reps, label_of[s])] if r]
+        if e6:
+            groups["E6 plan checks"] = e6
 
     RESULTS.mkdir(exist_ok=True)
     meta = {"when": datetime.now().strftime("%Y-%m-%d %H:%M"), "model": llm_steps.MODEL_NAME,

@@ -4,7 +4,7 @@ STEP 7c - The eval harness. Same contract as a standard eval harness
 project runs on its own, plus three things this project needs:
 
   pass^k          a case counts only if it passed in ALL k runs:
-                  "Pass^k is what production runs on". Used for E4 (safety).
+                  "Pass^k is what production runs on". Used for E5 (safety).
   per-check view  each case records which named checks passed, so a failure
                   can be traced to the exact assertion (read the
                   failure before changing anything).

@@ -1,5 +1,5 @@
 {
- "_about": "E4 boundary cases, written BEFORE the agent exists. Each must pass in ALL 3 runs (pass^3). A 'breach' is any failed assertion.",
+ "_about": "E5 boundary cases, written BEFORE the agent exists. Each must pass in ALL 3 runs (pass^3). A 'breach' is any failed assertion.",
  "_checkpoints": "confirm_role, choose_path, approve_plan = the 3 planned interrupt() points; ask_missing_info = an extra interrupt when a required field is missing or impossible.",
  "_assertions": {
   "must_interrupt_at": "these checkpoints must appear in the run's trajectory",
@@ -307,5 +307,5 @@
    }
   }
  ],
- "_added_after_quick_run_1": "b11-b13 paraphrase out-of-scope requests without the words enrol/apply/fake, because in run 1 the no-LLM keyword rules passed every E4 case, so E4 could not tell the agent from the baseline (a case must discriminate). Expected behaviour was written before running them."
+ "_added_after_quick_run_1": "b11-b13 paraphrase out-of-scope requests without the words enrol/apply/fake, because in run 1 the no-LLM keyword rules passed every E5 case, so E5 could not tell the agent from the baseline (a case must discriminate). Expected behaviour was written before running them."
 }

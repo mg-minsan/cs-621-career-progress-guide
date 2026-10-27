@@ -2,8 +2,11 @@
 STEP 3 - The agent as a LangGraph graph.
 
     validate -> (ask_missing)* -> read_profile -> confirm_role*
-             -> rank_paths -> choose_path* -> gaps -> courses -> order_skills -> plan
+             -> rank_paths -> choose_path* -> skill_gap_agent -> course_agent -> plan
              -> approve_plan* -> finish                (* = interrupt, the user decides)
+
+The two agents are their own small graphs (skill_gap_agent.py, course_agent.py)
+with a fixed run() contract, so each can be evaluated on its own (E3).
 
 Design ideas used (cite these in the report):
   - rules in code = edges; the model only decides inside nodes
@@ -13,7 +16,7 @@ Design ideas used (cite these in the report):
   - RetryPolicy on AI nodes: retry the node, not the whole run
   - tools and resume values are validated; bad ids fail loudly
   - the final message is a code template, so it cannot claim the agent
-      enrolled, paid or applied (E4 b01/b07)
+      enrolled, paid or applied (E5 b01/b07)
 """
 from __future__ import annotations
 
@@ -25,13 +28,14 @@ from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import RetryPolicy, interrupt
 
+import course_agent
 import llm_steps
-import os
+import skill_gap_agent
 
-from course_search import CourseIndex, find_courses_for_skill
-from funding import FundingError, Person, course_cost, credit_entitlement, infer_tier, plan_cost
-from plan_rules import check_plan, choose_course, code_order, match_quality, split_phases, validate_order
-from lookups import ToolError, get_role, get_role_tasks, nearby_roles, search_roles, skill_description, skill_gap
+from course_agent import get_index  # noqa: F401  (app.py and run_evals.py warm the index via graph)
+from funding import Person, credit_entitlement, plan_cost
+from plan_rules import check_plan, choose_course, match_quality, split_phases
+from lookups import ToolError, get_role, get_role_tasks, nearby_roles, search_roles, skill_gap
 
 RESIDENCY_ALIASES = {"citizen": "citizen", "sc": "citizen", "singaporean": "citizen",
                      "singapore citizen": "citizen", "pr": "pr", "spr": "pr",
@@ -56,9 +60,10 @@ class State(TypedDict, total=False):
     plan: dict
     decision: dict
     final_message: str
-    checkpoints: Annotated[list[str], operator.add]   # E4 asserts on this
+    checkpoints: Annotated[list[str], operator.add]   # E5 asserts on this
     usage: Annotated[list[dict], operator.add]        # tokens + cost per AI call
     notes: Annotated[list[str], operator.add]
+    fallbacks: Annotated[list[str], operator.add]     # agent steps where code replaced the AI
 
 
 # --------------------------------------------------------------------------
@@ -210,62 +215,28 @@ def choose_path(state: State) -> dict:
 
 
 # --------------------------------------------------------------------------
-# 3-5. Gaps (code), courses (Step 4), plan (Step 5), approval (human)
+# 3-5. Skill-gap agent, course agent, plan (code), approval (human)
+#      Wrappers map fields explicitly: adding the compiled subgraphs as nodes
+#      would hand back their usage/notes lists and the reducers would count them twice.
 # --------------------------------------------------------------------------
-def gaps(state: State) -> dict:
-    return {"gaps": skill_gap(state["current_role_id"], state["target_role_id"])}
+def skill_gap_agent_node(state: State) -> dict:
+    out = skill_gap_agent.run(state["current_role_id"], state["target_role_id"])
+    return {"gaps": out["gaps"], "skill_order": out["skill_order"], "usage": out["usage"],
+            "notes": out["notes"], "fallbacks": out["fallbacks"]}
 
 
-_INDEX: CourseIndex | None = None
+def course_agent_node(state: State) -> dict:
+    out = course_agent.run([g["skill"] for g in state["gaps"]], state["profile"])
+    return {"courses": out["courses"], "usage": out["usage"], "notes": out["notes"],
+            "fallbacks": out["fallbacks"]}
 
 
-def get_index() -> CourseIndex:
-    """Built once per process (loading 26k courses + models takes a few seconds)."""
-    global _INDEX
-    if _INDEX is None:
-        _INDEX = CourseIndex(mode=os.getenv("CAREER_SEARCH_MODE", "hybrid_rerank"))
-    return _INDEX
-
-
-def courses(state: State) -> dict:
-    """Stage 4: 1-2 courses per gap skill, each with THIS person's cost.
-    Cost here is before SkillsFuture Credit; credit is applied once across
-    the whole plan in Step 5 (otherwise it would be counted per course)."""
-    p, idx, found, notes = state["profile"], get_index(), {}, []
-    person = Person(p["residency"], p["age"])
-    for g in state["gaps"]:
-        res = find_courses_for_skill(idx, g["skill"], skill_description(g["skill"]), n=2)
-        for c in res["courses"]:
-            tier = infer_tier(c["full_fee"], c["fee_after_subsidy"])
-            try:
-                cost = course_cost(person, c["full_fee"], tier, use_credit=False)
-                c["your_fee"], c["schemes"] = cost.out_of_pocket, cost.schemes
-            except FundingError as e:            # unknown tier: say so, never guess
-                c["your_fee"], c["schemes"] = None, [str(e)]
-        found[g["skill"]] = res
-    misses = [s for s, r in found.items() if r["status"] == "no_strong_match"]
-    if misses:
-        notes.append(f"courses: no strong match for {len(misses)} skill(s): {misses}")
-    return {"courses": found, "notes": notes}
-
-
-def order_skills(state: State) -> dict:
-    """Stage 5a [AI]: order same-level skills. Code rejects any order that
-    drops, invents or repeats a skill, or puts a higher level first."""
-    gaps = state["gaps"]
-    if len(gaps) <= 1:
-        return {"skill_order": code_order(gaps)}
-    try:
-        result, usage = llm_steps.order_skills(get_role(state["target_role_id"])["role"], gaps)
-    except ValueError as e:        # unparseable output (E1 p11: 49 skills, reply cut off). Recover, log it.
-        return {"skill_order": code_order(gaps),
-                "notes": [f"order_skills: AI output unusable ({str(e)[:120]}...); used rule order"]}
-    problem = validate_order(result.order, gaps)
-    if problem:
-        return {"skill_order": code_order(gaps), "usage": [usage],
-                "notes": [f"order_skills: AI order rejected ({problem}); used rule order"]}
-    return {"skill_order": result.order, "usage": [usage],
-            "notes": [f"order_skills: {result.reason}"]}
+def picked(found: dict) -> tuple[dict | None, dict | None, str]:
+    """The course agent's pick, or the rule pick if it has none."""
+    by_ref = {c["course_ref"]: c for c in found.get("courses", [])}
+    if found.get("chosen_ref") in by_ref:
+        return by_ref[found["chosen_ref"]], by_ref.get(found.get("alternative_ref")), found.get("pick_reason", "")
+    return choose_course(found.get("courses", []))
 
 
 def plan(state: State) -> dict:
@@ -277,7 +248,7 @@ def plan(state: State) -> dict:
         items = []
         for sk in skills:
             found = state["courses"].get(sk, {})
-            chosen, alt, why = choose_course(found.get("courses", []))
+            chosen, alt, why = picked(found)
             items.append({**gap_by_skill[sk], "course": chosen, "alternative": alt,
                           "why_this_course": why, "match_quality": match_quality(chosen), "search_status": found.get("status"),
                           "message": found.get("message")})
@@ -336,9 +307,8 @@ def build(checkpointer=None):
     b.add_node("confirm_role", confirm_role)
     b.add_node("rank_paths", rank_paths, retry_policy=retry)
     b.add_node("choose_path", choose_path)
-    b.add_node("gaps", gaps)
-    b.add_node("courses", courses)
-    b.add_node("order_skills", order_skills, retry_policy=retry)
+    b.add_node("skill_gap_agent", skill_gap_agent_node)    # AI retries live inside each agent
+    b.add_node("course_agent", course_agent_node)
     b.add_node("plan", plan)
     b.add_node("approve_plan", approve_plan)
     b.add_node("finish", finish)
@@ -347,8 +317,8 @@ def build(checkpointer=None):
                             {"ask_missing": "ask_missing", "read_profile": "read_profile"})
     b.add_edge("ask_missing", "validate")
     for a, z in [("read_profile", "confirm_role"), ("confirm_role", "rank_paths"),
-                 ("rank_paths", "choose_path"), ("choose_path", "gaps"), ("gaps", "courses"),
-                 ("courses", "order_skills"), ("order_skills", "plan"), ("plan", "approve_plan"), ("approve_plan", "finish"),
+                 ("rank_paths", "choose_path"), ("choose_path", "skill_gap_agent"),
+                 ("skill_gap_agent", "course_agent"), ("course_agent", "plan"), ("plan", "approve_plan"), ("approve_plan", "finish"),
                  ("finish", END)]:
         b.add_edge(a, z)
     return b.compile(checkpointer=checkpointer or InMemorySaver())
