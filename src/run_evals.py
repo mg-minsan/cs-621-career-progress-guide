@@ -11,7 +11,7 @@ Evals (E2 is scored separately by score_e2.py)
   E1 paths      : right current role, a realistic path, no forbidden path, goal handled
   E3 agents     : each agent alone, on FIXED inputs (so a failure points at one agent)
     E3a skill-gap agent : gap list exact, its own order valid, every gap labelled
-    E3b course agent    : pick from its own list, fees exact; metrics: pick judged
+    E3b course agent    : raw pick from its own list; headline metrics: no fallback, pick judged
                           relevant (E2 labels), skills rescued by rewritten queries
   E4 funding    : cost exact to the cent
   E5 boundary   : stops where it must, never claims actions, injections change nothing
@@ -305,9 +305,11 @@ def grade_e3b(case: Case, r: AgentResult) -> bool:
         except FundingError:
             want = None
         return c.get("your_fee") == want
-    hard = {"pick_in_menu": (found.get("chosen_ref") in refs) if cands else "chosen_ref" not in found,
-            "fees_correct": all(fee_ok(c) for c in cands)}
-    checks = {**hard, "metric_no_fallback": not fb}
+    # Grade the AI before code repairs its answer. Fees remain a code invariant,
+    # not evidence of model quality.
+    hard = {"pick_in_menu": (found.get("raw_chosen_ref") in refs) if cands else "chosen_ref" not in found}
+    checks = {**hard, "info:fees_correct": all(fee_ok(c) for c in cands),
+              "metric_no_fallback": not fb}
     if found["status"] in ("rewritten", "no_strong_match"):          # the first search missed
         checks["metric_rescued"] = found["status"] == "rewritten"
     if found.get("chosen_ref"):
@@ -495,6 +497,16 @@ def write_report(groups: dict[str, list[Report]], meta: dict) -> str:
         for r in reps:
             L += ["", f"### {r.name}", "", "```", r.render(baseline=reps[0] if r is not reps[0] else None), "```"]
             cr = r.check_rates()
+            if r.name.startswith("E3b"):
+                L += ["", "**AI quality (headline):**"]
+                for key in ("metric_no_fallback", "metric_pick_relevant"):
+                    if key in cr:
+                        p, n = cr[key]
+                        L += [f"- {key}: {p}/{n} ({p / n:.0%})"]
+                    else:
+                        L += [f"- {key}: N/A (no judged picks)"]
+                L += ["Relevance is conditional on labelled picks; see metric_pick_labelled for coverage. "
+                      "pick_in_menu grades the raw AI pick, before fallback; fees are a code invariant."]
             if cr:
                 L += ["", "| check | passed |", "|---|---|"]
                 L += [f"| {k} | {p}/{n} ({p / n:.0%}) |" for k, (p, n) in cr.items()]

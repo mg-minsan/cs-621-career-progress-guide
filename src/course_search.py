@@ -153,11 +153,23 @@ class CourseIndex:
         return out
 
 
-def strong_hits(index: CourseIndex, query: str, n: int, pool: int = 30) -> list[dict]:
-    """Top-n hits that pass RERANK_GOOD (every hit counts in modes with no score).
-    The one definition of 'strong': the fallback chain and the course agent's
-    rewritten queries both use it, so an AI query cannot lower the bar."""
+def strong_hits(index: CourseIndex, query: str, n: int, pool: int = 30,
+                relevance_query: str | None = None) -> list[dict]:
+    """Retrieve with query, but validate rewrites against the original skill.
+
+    Unscored ablations require overlap with the original skill's retrieval
+    instead; they cannot claim a semantic strong-match guarantee.
+    """
     hits = index.search(query, k=n, pool=pool)
+    if relevance_query and hits:
+        if index.mode == "hybrid_rerank":
+            docs = {c["course_ref"]: c["search_text"][:1000] for c in index.courses}
+            scores = index.reranker([(relevance_query, docs[h["course_ref"]]) for h in hits])
+            hits = [{**h, "score": float(s)} for h, s in zip(hits, scores)]
+            hits.sort(key=lambda h: h["score"], reverse=True)
+        else:
+            refs = {h["course_ref"] for h in index.search(relevance_query, k=pool, pool=pool)}
+            hits = [h for h in hits if h["course_ref"] in refs]
     return [h for h in hits if h["score"] is None or h["score"] >= RERANK_GOOD][:n]
 
 

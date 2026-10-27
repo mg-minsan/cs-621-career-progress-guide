@@ -8,7 +8,8 @@ Contract
     run(skills, person) -> {courses, usage, notes, fallbacks}
 
   courses    {skill: {status, query, courses[+your_fee, schemes], message?,
-                      chosen_ref, alternative_ref, pick_reason}}
+                      raw_chosen_ref, chosen_ref, alternative_ref, pick_reason}}
+             raw_chosen_ref: AI pick before menu enforcement (None if missing)
              status: title | broadened | widened | rewritten | no_strong_match
   fallbacks  the steps where code replaced the AI's answer (an E3b metric)
 
@@ -24,6 +25,7 @@ from __future__ import annotations
 
 import operator
 import os
+import time
 from typing import Annotated
 
 from typing_extensions import TypedDict
@@ -103,7 +105,7 @@ def rewrite_queries(state: CourseState) -> dict:
     try:
         result, usage = llm_steps.rewrite_queries(misses)
     except ValueError as e:
-        return {"rewrites": {}, "fallbacks": ["rewrite_queries"],
+        return {"rewrites": {}, "fallbacks": ["rewrite_queries"], "usage": llm_steps.failed_usage(e),
                 "notes": [f"rewrite_queries: AI output unusable ({str(e)[:120]}...); no rewrites"]}
     wanted, rewrites = {m["skill"] for m in misses}, {}
     for r in result.rewrites:
@@ -116,11 +118,11 @@ def rewrite_queries(state: CourseState) -> dict:
 
 
 def retry_search(state: CourseState) -> dict:
-    """[code] Same strong-match bar as the first search."""
+    """[code] Retrieve rewrites, but measure relevance against the original skill."""
     idx, person, found, rescued = get_index(), _person(state), dict(state["found"]), []
     for skill, queries in state.get("rewrites", {}).items():
         for q in queries:
-            strong = strong_hits(idx, q, N_CANDIDATES)
+            strong = strong_hits(idx, q, N_CANDIDATES, relevance_query=skill)
             if strong:
                 found[skill] = {"skill": skill, "status": "rewritten", "query": q,
                                 "courses": add_fees(strong, person)}
@@ -134,6 +136,19 @@ def _alternative(cands: list[dict], chosen: dict) -> dict | None:
     return next((c for c in cands if c["course_ref"] != chosen["course_ref"]), None)
 
 
+def _pick_chunk(items: list[dict]):
+    """Retry only this chunk, never previously completed (and billed) chunks."""
+    policy = RetryPolicy(max_attempts=3)
+    for attempt in range(policy.max_attempts):
+        try:
+            return llm_steps.pick_courses(items)
+        except Exception as error:
+            if attempt == policy.max_attempts - 1 or not policy.retry_on(error):
+                raise
+            time.sleep(min(policy.initial_interval * policy.backoff_factor ** attempt,
+                           policy.max_interval))
+
+
 def pick_courses(state: CourseState) -> dict:
     """[AI] One course per skill, from that skill's own list only."""
     found = {k: dict(v) for k, v in state["found"].items()}
@@ -143,10 +158,11 @@ def pick_courses(state: CourseState) -> dict:
     picks, out = {}, {"usage": [], "notes": []}
     for i in range(0, len(items), PICK_CHUNK):    # 49 picks in one reply was cut off (E1 p11)
         try:
-            result, usage = llm_steps.pick_courses(items[i:i + PICK_CHUNK])
+            result, usage = _pick_chunk(items[i:i + PICK_CHUNK])
             picks |= {p.skill: p for p in result.picks}
             out["usage"].append(usage)
         except ValueError as e:
+            out["usage"].extend(llm_steps.failed_usage(e))
             out["notes"].append(f"pick_courses: AI output unusable ({str(e)[:120]}...); rule picks")
     replaced = []
     for it in items:
@@ -159,7 +175,8 @@ def pick_courses(state: CourseState) -> dict:
         else:                                      # off the menu or skipped: rule pick
             chosen, alt, why = choose_course(cands)
             replaced.append(it["skill"])
-        found[it["skill"]] |= {"chosen_ref": chosen["course_ref"],
+        found[it["skill"]] |= {"raw_chosen_ref": p.course_ref if p else None,
+                               "chosen_ref": chosen["course_ref"],
                                "alternative_ref": alt["course_ref"] if alt else None,
                                "pick_reason": why}
     out["found"] = found
@@ -176,7 +193,7 @@ def build():
     b.add_node("search", search)
     b.add_node("rewrite_queries", rewrite_queries, retry_policy=retry)
     b.add_node("retry_search", retry_search)
-    b.add_node("pick_courses", pick_courses, retry_policy=retry)
+    b.add_node("pick_courses", pick_courses)
     b.add_edge(START, "search")
     b.add_conditional_edges("search", route_after_search,
                             {"rewrite_queries": "rewrite_queries", "pick_courses": "pick_courses"})

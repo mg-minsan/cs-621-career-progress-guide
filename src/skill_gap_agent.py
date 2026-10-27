@@ -50,7 +50,7 @@ def explain_gaps(state: GapState) -> dict:
     try:
         result, usage = llm_steps.explain_gaps(get_role(tid)["role"], get_role_tasks(tid), gaps)
     except ValueError as e:                        # unparseable output: label nothing, say so
-        result, usage = None, None
+        result, usage = None, getattr(e, "usage", None)
         note = f"explain_gaps: AI output unusable ({str(e)[:120]}...); default labels"
     labels = {n.skill: n for n in result.notes} if result else {}
     unlabelled = [g["skill"] for g in gaps if g["skill"] not in labels]
@@ -75,6 +75,7 @@ def order_skills(state: GapState) -> dict:
         result, usage = llm_steps.order_skills(get_role(state["target_role_id"])["role"], gaps)
     except ValueError as e:        # unparseable output (E1 p11: 49 skills, reply cut off). Recover, log it.
         return {"skill_order": code_order(gaps), "fallbacks": ["order_skills"],
+                "usage": llm_steps.failed_usage(e),
                 "notes": [f"order_skills: AI output unusable ({str(e)[:120]}...); used rule order"]}
     problem = validate_order(result.order, gaps)
     if problem:

@@ -91,6 +91,19 @@ def _model():
     return init_chat_model(MODEL_NAME, max_tokens=4000, timeout=90, max_retries=3)
 
 
+class OutputParseError(ValueError):
+    """A billed response that could not be parsed; keep usage for fallback paths."""
+
+    def __init__(self, message: str, usage: dict):
+        super().__init__(message)
+        self.usage = usage
+
+
+def failed_usage(error: ValueError) -> list[dict]:
+    usage = getattr(error, "usage", None)
+    return [usage] if usage is not None else []
+
+
 def _call(schema: type[BaseModel], user_text: str) -> tuple[BaseModel, dict]:
     """One structured call. Returns (parsed, usage). Raises if unparseable."""
     from langchain.messages import HumanMessage, SystemMessage
@@ -98,13 +111,14 @@ def _call(schema: type[BaseModel], user_text: str) -> tuple[BaseModel, dict]:
     # method (LangChain warned about it in our first live run).
     llm = _model().with_structured_output(schema, method="json_schema", include_raw=True)
     out = llm.invoke([SystemMessage(SYSTEM), HumanMessage(user_text)])
-    if out.get("parsed") is None:
-        raise ValueError(f"Model output did not match {schema.__name__}: {out.get('parsing_error')}")
     meta = getattr(out["raw"], "usage_metadata", None) or {}
     i, o = meta.get("input_tokens", 0), meta.get("output_tokens", 0)
     pin, pout = PRICES.get(MODEL_NAME, (0.0, 0.0))
     usage = {"step": schema.__name__, "model": MODEL_NAME, "input_tokens": i, "output_tokens": o,
              "cost_usd": round(i / 1e6 * pin + o / 1e6 * pout, 6)}
+    if out.get("parsed") is None:
+        raise OutputParseError(
+            f"Model output did not match {schema.__name__}: {out.get('parsing_error')}", usage)
     return out["parsed"], usage
 
 
