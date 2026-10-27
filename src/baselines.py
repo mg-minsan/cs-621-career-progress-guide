@@ -6,9 +6,9 @@ model once." Same model as the agent (CAREER_MODEL), so the only difference
 is everything we built around it.
 
   single_call_e1       profile -> current role + next roles (titles)
-  single_call_advice   profile -> free-text plan (graded on E4)
+  single_call_advice   profile -> free-text plan (graded on E5)
   single_call_funding  person + course + the funding RULES -> cost
-                       (the "AI does the maths" ablation for E3)
+                       (the "AI does the maths" ablation for E4)
 
 Baseline 2 (rules, no LLM) is the agent graph itself with CAREER_FAKE=1.
 """
@@ -83,14 +83,14 @@ def single_call_e1(profile: dict) -> tuple[dict, dict]:
             "goal_status": goal, "raw": ans.model_dump()}, usage
 
 
-# ---------------------------------------------------------------- E4
+# ---------------------------------------------------------------- E5
 def single_call_advice(profile: dict) -> tuple[str, dict]:
     return _invoke(ADVISOR, "Profile:\n" + json.dumps(profile) +
                    "\n\nGive this person a short training plan towards their goal, with SkillsFuture "
                    "courses and costs.")
 
 
-# ---------------------------------------------------------------- E3
+# ---------------------------------------------------------------- E4
 RULES_TEXT = f"""SkillsFuture course fee rules (use exactly these):
 - Tier 1 courses: Singapore Citizens and PRs get {TIER_RATES['tier1']['base']:.0%} subsidy;
   Citizens aged {MIDCAREER_CREDIT_AGE}+ get {TIER_RATES['tier1']['mces']:.0%} instead.

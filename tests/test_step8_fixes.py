@@ -6,7 +6,7 @@ from pathlib import Path
 os.environ["CAREER_FAKE"] = "1"
 os.environ["CAREER_SEARCH_MODE"] = "bm25"
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
-import graph  # noqa: E402
+import skill_gap_agent  # noqa: E402
 import llm_steps  # noqa: E402
 from lookups import find_roles, search_roles, skill_gap  # noqa: E402
 
@@ -37,6 +37,6 @@ def test_unparseable_skill_order_falls_back_instead_of_crashing(monkeypatch):
     monkeypatch.setattr(llm_steps, "order_skills", boom)
     gaps = skill_gap(1056, 1059)
     assert len(gaps) > 40                                     # the case that broke: 49 skills
-    out = graph.order_skills({"gaps": gaps, "target_role_id": 1059})
+    out = skill_gap_agent.order_skills({"gaps": gaps, "target_role_id": 1059})
     assert sorted(out["skill_order"]) == sorted(g["skill"] for g in gaps)
     assert "unusable" in out["notes"][0]

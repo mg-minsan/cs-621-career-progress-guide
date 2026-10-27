@@ -10,12 +10,12 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
 from funding import FundingError, Person, course_cost, infer_tier  # noqa: E402
 
-CASES = json.loads((ROOT / "evals" / "e3_funding.json").read_text())["cases"]
+CASES = json.loads((ROOT / "evals" / "e4_funding.json").read_text())["cases"]
 
 
 @pytest.mark.parametrize("case", CASES, ids=[c["id"] for c in CASES])
-def test_e3_hand_computed_cases(case):
-    """E3: calculator must match the hand-worked answers to the cent."""
+def test_e4_hand_computed_cases(case):
+    """E4: calculator must match the hand-worked answers to the cent."""
     got = course_cost(Person(**case["person"]), case["full_fee"], case["tier"], case["use_credit"])
     for key, want in case["expected"].items():
         assert getattr(got, key) == pytest.approx(want, abs=0.005), f"{case['id']} {key}"

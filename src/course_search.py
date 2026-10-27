@@ -153,6 +153,14 @@ class CourseIndex:
         return out
 
 
+def strong_hits(index: CourseIndex, query: str, n: int, pool: int = 30) -> list[dict]:
+    """Top-n hits that pass RERANK_GOOD (every hit counts in modes with no score).
+    The one definition of 'strong': the fallback chain and the course agent's
+    rewritten queries both use it, so an AI query cannot lower the bar."""
+    hits = index.search(query, k=n, pool=pool)
+    return [h for h in hits if h["score"] is None or h["score"] >= RERANK_GOOD][:n]
+
+
 def find_courses_for_skill(index: CourseIndex, skill: str, description: str = "",
                            n: int = 2) -> dict:
     """The fallback chain. Returns which step found the courses, so the
@@ -162,10 +170,9 @@ def find_courses_for_skill(index: CourseIndex, skill: str, description: str = ""
     for status, query, pool in attempts:
         if status != "title" and not description:
             continue
-        hits = index.search(query, k=n, pool=pool)
-        strong = [h for h in hits if h["score"] is None or h["score"] >= RERANK_GOOD]
+        strong = strong_hits(index, query, n, pool)
         if strong:
-            return {"skill": skill, "status": status, "query": query, "courses": strong[:n]}
+            return {"skill": skill, "status": status, "query": query, "courses": strong}
     return {"skill": skill, "status": "no_strong_match", "query": skill, "courses": [],
             "message": f"No strong SkillsFuture course found for '{skill}'. "
                        "Search MySkillsFuture for this skill yourself."}

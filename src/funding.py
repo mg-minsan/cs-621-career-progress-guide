@@ -3,7 +3,7 @@ STEP 2 - Funding calculator. Plain code, no AI.
 
 Design rule: the model never does money maths. This module is both
   (a) a TOOL the agent calls in Stage 5, and
-  (b) the reference the E3 eval is checked against.
+  (b) the reference the E4 eval is checked against.
 
 RULES (copied from official pages - re-check before submission)
 Source 1: MySkillsFuture "SkillsFuture Funding for Individuals"
@@ -122,7 +122,7 @@ def course_cost(person: Person, full_fee: float, tier: str,
             needs_input = True
             notes.append("Credit balance unknown: ask the user before applying SkillsFuture Credit.")
         elif person.credit_balance > credit_entitlement(person):
-            # Boundary (E4 b10): more credit than the person can ever have received.
+            # Boundary (E5 b10): more credit than the person can ever have received.
             needs_input = True
             notes.append(f"Stated credit balance ${person.credit_balance:,.2f} exceeds the maximum "
                          f"${credit_entitlement(person):,.2f} for this age; ask the user to check it.")
