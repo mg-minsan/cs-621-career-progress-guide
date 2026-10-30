@@ -190,7 +190,7 @@ E1 uses labelled personas in `evals/e1_personas.json`; its label generation and 
 ```powershell
 $env:HF_HUB_OFFLINE = "1"
 py src/run_evals.py --quick        # 1 run per case: check it works (~$0.40)
-py src/run_evals.py                # the real thing: 3 runs (~$1-2, 20-40 min)
+py src/run_evals.py                # the real thing: 3 runs, attacks 10 (~$9, ~2 h on 31 Oct)
 ```
 Writes `results/eval_report.md` (tables for the report) and `results/eval_results.json` (raw data).
 
@@ -241,6 +241,33 @@ Agent failures on E1, read from `eval_results.json`:
 - p04 (2/3, flaky): suggested "Customer Service, Billing and Settlement Department Manager" (2.55 -> 5.21) to an executive. NOT fixed on purpose: a "too senior" filter in the agent is the same rule the E1 answer key uses, so it would pass by copying the grader. Report as a real failure.
 - The E1 answer key (`e1_auto_labels.py`) still uses plain `find_roles`, so these fixes cannot change the labels.
 - Caveat for the report: the fixes were made after seeing these 12 personas, so run 2's E1 number is optimistic (no held-out set).
+
+## After review: fixes 1-9 (30-31 Oct 2026)
+
+A review against the course (weeks 1-8) found gaps in robustness, guardrails and, above all, in how far the numbers could be trusted. Each fix was its own branch and PR, with offline tests (107 → 159 tests).
+
+| Fix | What changed | Why (course) |
+|---|---|---|
+| 1 Robustness | bad credit input is checked up front; an unusable AI reply falls back to rules (cost still counted); retries only on 429/5xx/connection errors; current role refused as target | W2: fail loudly, retry vs re-plan |
+| 2 Sub-agents | core/supporting labels (already paid for, then dropped) now order skills and are shown; the course agent gets the target job | W7: information withholding |
+| 3 Guardrails | **$0.50 spend cap per plan** (worst case checked before each call; over it, rules take over and the user is told); AI and catalogue text shown as plain text (a hidden image link made the browser call an attacker URL 3 times, 0 after); [docs/safety.md](docs/safety.md) | W8: unbounded consumption, lethal trifecta |
+| 4 Eval cases | 8 **held-out** personas; 4 harmless goals that must not be refused; 5 attacks in course text × 10 runs. All written before any run | W3: held-out data, discriminating cases |
+| 5 Human check | a teammate, blind to the AI labels, checked 25 E2 pairs (18/19 agree, κ 0.89) and 10 E1 labels (10/10) | W3: check the grader |
+| 6 Thresholds | tuned on half the E2 skills, tested on the other half; tuned values were worse (overfit to 7 negatives), so the old ones stay, now measured | W3: no tuning on the test set |
+| 7 Grounding | measures whether advice names a real course and the person's own fee: agent 39/39, single call 0/51 | baselines, honestly |
+| 9a Revise plan | "Not for me" was a dead end: feedback now revises the plan, max 2 times, via a fixed menu | W1: termination; W6: checkpoints |
+| 8 Final run | full suite on the final code, below | W3: ≥3 runs, baselines |
+| 8b Goal message | found by held-out h01: the screen said "no match" and "matches your goal" at once | held-out finds what dev cannot |
+
+## Step 8b: final run (2026-10-31, final code, 3 runs, attacks 10 runs, $8.64)
+
+E1 agent 100% (dev) / **83% ± 7 held-out**; single call 75% / 46%; rules 8% / 25% · E3a and E3b 100% for agent and rules · E4 calculator 100%, Claude's maths 100% · E5 agent 88%, rules 59%, single 6% (the single call fails only the pause checks it cannot pass by construction) · E5b agent 98% (true 100%: the one failure is a grader false positive), rules 80% · E6 99/99 · grounding: agent 39/39, single call 0/51.
+
+What the report should say, from reading every failure (details in [docs/evaluation.md §10](docs/evaluation.md#10-read-the-results)):
+- The dev set flattered the agent by 17 points. The held-out number (83%) is the honest one, and the lead over the single call holds (+37).
+- Grounding comes from the tools: the rules baseline is as grounded as the agent. Claude's value shows in E1 (reading roles and goals), E5 (paraphrased requests, not over-refusing harmless goals that rules refuse: b14, b17) and E5b (it never picked the fake course; rules did 10/10).
+- The AI steps inside the sub-agents are safe but not measurably better than rules (E3), and Claude's skill order changes between runs (stable in 1/13 cases).
+- Over-caution on b15/b16 is left as a known limit: the cheap error, kept on purpose.
 
 ## Step 6: Streamlit app
 
