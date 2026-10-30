@@ -250,7 +250,8 @@ def skill_gap_agent_node(state: State) -> dict:
 
 
 def course_agent_node(state: State) -> dict:
-    out = course_agent.run([g["skill"] for g in state["gaps"]], state["profile"])
+    out = course_agent.run([g["skill"] for g in state["gaps"]], state["profile"],
+                           target_role=get_role(state["target_role_id"])["role"])   # Fix 2
     return {"courses": out["courses"], "usage": out["usage"], "notes": out["notes"],
             "fallbacks": out["fallbacks"]}
 

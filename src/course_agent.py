@@ -61,6 +61,7 @@ def reset_index() -> None:
 class CourseState(TypedDict, total=False):
     skills: list[dict]            # [{skill, description}]
     person: dict                  # {residency, age}
+    target_role: str              # Fix 2: the job the learner is aiming for ("" = unknown, e.g. E3b)
     found: dict
     rewrites: dict                # skill -> [query]
     usage: Annotated[list[dict], operator.add]
@@ -103,7 +104,9 @@ def rewrite_queries(state: CourseState) -> dict:
     misses = [{"skill": k, "description": desc.get(k, ""), "tried": r["query"]}
               for k, r in state["found"].items() if r["status"] == "no_strong_match"]
     try:
-        result, usage = llm_steps.rewrite_queries(misses)
+        role = state.get("target_role") or ""
+        result, usage = (llm_steps.rewrite_queries(misses, role) if role
+                         else llm_steps.rewrite_queries(misses))
     except ValueError as e:
         return {"rewrites": {}, "fallbacks": ["rewrite_queries"], "usage": llm_steps.failed_usage(e),
                 "notes": [f"rewrite_queries: AI output unusable ({str(e)[:120]}...); no rewrites"]}
@@ -136,11 +139,13 @@ def _alternative(cands: list[dict], chosen: dict) -> dict | None:
     return next((c for c in cands if c["course_ref"] != chosen["course_ref"]), None)
 
 
-def _pick_chunk(items: list[dict]):
+def _pick_chunk(items: list[dict], target_role: str = ""):
     """Retry only this chunk, never previously completed (and billed) chunks."""
     policy = RetryPolicy(max_attempts=3, retry_on=llm_steps.transient_only)
     for attempt in range(policy.max_attempts):
         try:
+            if target_role:
+                return llm_steps.pick_courses(items, target_role)
             return llm_steps.pick_courses(items)
         except Exception as error:
             if attempt == policy.max_attempts - 1 or not policy.retry_on(error):
@@ -158,7 +163,7 @@ def pick_courses(state: CourseState) -> dict:
     picks, out = {}, {"usage": [], "notes": []}
     for i in range(0, len(items), PICK_CHUNK):    # 49 picks in one reply was cut off (E1 p11)
         try:
-            result, usage = _pick_chunk(items[i:i + PICK_CHUNK])
+            result, usage = _pick_chunk(items[i:i + PICK_CHUNK], state.get("target_role") or "")
             picks |= {p.skill: p for p in result.picks}
             out["usage"].append(usage)
         except ValueError as e:
@@ -206,10 +211,13 @@ def build():
 GRAPH = build()
 
 
-def run(skills: list[str], person: dict) -> dict:
-    """skills: gap skill names; person: {residency, age}."""
+def run(skills: list[str], person: dict, target_role: str = "") -> dict:
+    """skills: gap skill names; person: {residency, age}; target_role: the job aimed for.
+    Search stays on the skill alone (so E2's labels still apply); the role only steers
+    the AI's query rewrites and its pick among code's candidates."""
     out = GRAPH.invoke({"skills": [{"skill": s, "description": skill_description(s)} for s in skills],
-                        "person": {"residency": person["residency"], "age": person["age"]}})
+                        "person": {"residency": person["residency"], "age": person["age"]},
+                        "target_role": target_role})
     found = out["found"]
     misses = [s for s, r in found.items() if r["status"] == "no_strong_match"]
     notes = out.get("notes", [])
