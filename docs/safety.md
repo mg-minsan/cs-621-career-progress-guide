@@ -32,7 +32,8 @@ Data does go to Anthropic, because that's what calling the model means. That's a
 | Wrong money figures | every fee, subsidy and credit is computed in `funding.py`, never by the AI | `funding.py` |
 | A broken plan reaches the user | `check_plan()` postconditions. A failing plan is never shown (fails loudly). | `plan_rules.py` |
 | Claiming actions it never took | the final message is a code template, not AI text | `graph.py: finish` |
-| Excessive agency | three human checkpoints. "Not for me" saves nothing. | `graph.py` |
+| Excessive agency | three human checkpoints. "Stop here" saves nothing. | `graph.py` |
+| A loop that never ends | **feedback revises the plan at most 2 times (Fix 9).** The AI only maps the feedback onto a fixed menu: cheaper, shorter, skip a listed skill, a different job, or stop. Code applies the change, keeps only skills that are in the plan, picks only from courses already found, and re-runs `check_plan`. The spend cap still applies. | `graph.py: read_feedback`, `llm_steps.py` |
 | **Unbounded consumption** | **spend cap per plan (Fix 3):** before each AI call, code checks that the call's worst case (all 4,000 output tokens) still fits under `CAREER_MAX_RUN_USD`, default $0.50. If it doesn't fit, the call is **never sent**: that step uses its rules version, the plan still passes `check_plan`, and the user is told. Retries only happen on temporary errors (429/5xx, Fix 1). | `llm_steps.py`, `graph.py` |
 | Output used as Markdown/HTML | AI- and catalogue-written text is escaped before display (`plain()`) | `ui_art.py`, `app.py` |
 

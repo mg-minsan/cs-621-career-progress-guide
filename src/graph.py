@@ -66,6 +66,10 @@ class State(TypedDict, total=False):
     notes: Annotated[list[str], operator.add]
     fallbacks: Annotated[list[str], operator.add]     # agent steps where code replaced the AI
     spend_capped: bool                                # Fix 3: the budget stopped at least one AI call
+    plan_prefs: dict                                  # Fix 9: {"prefer", "skip"} from the user's feedback
+    revisions: int                                    # Fix 9: plans revised so far (capped at MAX_REVISIONS)
+    revision_note: str
+    feedback_action: str
 
 
 # --------------------------------------------------------------------------
@@ -266,16 +270,37 @@ def picked(found: dict) -> tuple[dict | None, dict | None, str]:
     return choose_course(found.get("courses", []))
 
 
+def by_preference(found: dict, prefer: str) -> tuple[dict | None, dict | None, str]:
+    """Fix 9: re-choose among the SAME candidates code already found (all passed the match
+    gate). Only the rule for choosing changes; no new course can appear."""
+    chosen, alt, why = picked(found)
+    cands = found.get("courses", [])
+    if prefer == "best_match" or not cands:
+        return chosen, alt, why
+    if prefer == "cheaper":
+        best = min(cands, key=lambda c: (c.get("your_fee") is None, c.get("your_fee") or 0, -(c.get("score") or 0)))
+        reason = "cheapest of the matching courses (you asked for cheaper)"
+    else:
+        best = min(cands, key=lambda c: (c.get("hours") is None, c.get("hours") or 0, -(c.get("score") or 0)))
+        reason = "shortest of the matching courses (you asked for less time)"
+    if chosen and best["course_ref"] == chosen["course_ref"]:
+        return chosen, alt, why + "; also the " + reason.split(" (")[0].replace("of the matching courses", "option")
+    return best, chosen, reason
+
+
 def plan(state: State) -> dict:
     """Stage 5b [code]: pick one course per skill, split into phases, cost it,
     then check postconditions. A plan that breaks a rule is never shown."""
-    gap_by_skill = {g["skill"]: g for g in state["gaps"]}
+    prefs = state.get("plan_prefs") or {}
+    skip = [s for s in prefs.get("skip", []) if s in {g["skill"] for g in state["gaps"]}]
+    gaps = [g for g in state["gaps"] if g["skill"] not in skip]
+    gap_by_skill = {g["skill"]: g for g in gaps}
     phases = {}
-    for name, skills in split_phases(state["skill_order"]).items():
+    for name, skills in split_phases([s for s in state["skill_order"] if s not in skip]).items():
         items = []
         for sk in skills:
             found = state["courses"].get(sk, {})
-            chosen, alt, why = picked(found)
+            chosen, alt, why = by_preference(found, prefs.get("prefer", "best_match"))
             items.append({**gap_by_skill[sk], "course": chosen, "alternative": alt,
                           "why_this_course": why, "match_quality": match_quality(chosen), "search_status": found.get("status"),
                           "message": found.get("message")})
@@ -284,18 +309,21 @@ def plan(state: State) -> dict:
     p = state["profile"]
     cost = plan_cost(Person(p["residency"], p["age"], p.get("credit_balance")),
                      [c.get("your_fee") for c in chosen])
-    new = sum(1 for g in state["gaps"] if g["status"] == "missing")
+    new = sum(1 for g in gaps if g["status"] == "missing")
     target_role = get_role(state["target_role_id"])
     result = {"current_role": get_role(state["current_role_id"])["role"],
               "target_role": target_role["role"],
               "target_role_description": target_role.get("description") or "",
               "target_role_tasks": get_role_tasks(state["target_role_id"]),
-              "gap_summary": {"new_skills": new, "level_ups": len(state["gaps"]) - new},
+              "gap_summary": {"new_skills": new, "level_ups": len(gaps) - new},
               "phases": phases, "cost": cost,
               "total_hours": round(sum(c.get("hours") or 0 for c in chosen), 1),
               "spend": {"ai_cost_usd": round(spent(state), 4), "cap_usd": llm_steps.MAX_RUN_USD,
-                        "capped": bool(state.get("spend_capped"))}}
-    violations = check_plan(result, state["gaps"])
+                        "capped": bool(state.get("spend_capped"))},
+              "skipped": skip, "prefer": prefs.get("prefer", "best_match"),
+              "revision": state.get("revisions", 0), "max_revisions": MAX_REVISIONS,
+              "revision_note": state.get("revision_note", "")}
+    violations = check_plan(result, gaps)          # skipped skills are the user's choice, shown separately
     if violations:                                 # postcondition: fail loudly
         raise ToolError(f"Plan failed its checks: {violations}")
     return {"plan": result}
@@ -307,6 +335,57 @@ def approve_plan(state: State) -> dict:
     return {"decision": {"approved": approved,
                          "feedback": answer.get("feedback", "") if isinstance(answer, dict) else ""},
             "checkpoints": ["approve_plan"]}
+
+
+# --------------------------------------------------------------------------
+# Fix 9: "Not for me" was a dead end. Now feedback can revise the plan, at most
+# MAX_REVISIONS times (week 1: every loop needs a stop condition). The AI only
+# reads the feedback into a fixed menu; code applies it and re-checks the plan.
+# --------------------------------------------------------------------------
+MAX_REVISIONS = 2
+
+
+def route_after_approve(state: State) -> str:
+    d = state["decision"]
+    if d["approved"] or not (d.get("feedback") or "").strip():
+        return "finish"                            # approved, or "stop" with nothing to change
+    return "read_feedback" if state.get("revisions", 0) < MAX_REVISIONS else "finish"
+
+
+def read_feedback(state: State) -> dict:
+    skills = [g["skill"] for g in state["gaps"]]
+    feedback = state["decision"]["feedback"]
+    extra = {}
+    try:
+        fb, usage = llm_steps.read_feedback(feedback, skills)
+        usage = [usage]
+    except ValueError as e:                        # unusable reply or spend cap: keyword rules
+        fb, usage = llm_steps.rules_read_feedback(feedback, skills), llm_steps.failed_usage(e)
+        extra = {"fallbacks": ["read_feedback"],
+                 "notes": [f"read_feedback: AI output unusable ({str(e)[:120]}...); used rules"]}
+    old = state.get("plan_prefs") or {}
+    drop = [s for s in fb.drop_skills if s in skills]              # code enforces the menu
+    invented = [s for s in fb.drop_skills if s not in skills]
+    skip = list(dict.fromkeys(old.get("skip", []) + drop))
+    if len(skip) >= len(skills):                                   # never drop every skill
+        skip = old.get("skip", [])
+    prefs = {"prefer": fb.prefer if fb.prefer != "best_match" else old.get("prefer", "best_match"),
+             "skip": skip}
+    changed = prefs != {"prefer": old.get("prefer", "best_match"), "skip": old.get("skip", [])}
+    note = fb.reason.strip()
+    if fb.action == "revise" and not changed:
+        note = ("I could not tell what to change. Try e.g. 'cheaper', 'less time', "
+                "'skip <a skill>' or 'a different job'.")
+    out = {"usage": usage, "revisions": state.get("revisions", 0) + 1, "revision_note": note,
+           "plan_prefs": {} if fb.action == "change_path" else prefs, "feedback_action": fb.action,
+           "notes": extra.get("notes", []) + ([f"read_feedback: ignored unknown skills {invented}"] if invented else [])}
+    if "fallbacks" in extra:
+        out["fallbacks"] = extra["fallbacks"]
+    return out
+
+
+def route_after_feedback(state: State) -> str:
+    return {"revise": "plan", "change_path": "choose_path", "stop": "finish"}[state["feedback_action"]]
 
 
 def finish(state: State) -> dict:
@@ -321,8 +400,13 @@ def finish(state: State) -> dict:
     if state.get("spend_capped"):
         lines.append(f"To stay within the ${llm_steps.MAX_RUN_USD:.2f} AI budget for one plan, "
                      "some steps used the simpler rule-based version.")
+    if state.get("revisions"):
+        lines.append(f"Revised {state['revisions']} time(s) on your feedback.")
     lines.append("You approved this plan." if state["decision"]["approved"]
                  else "You did not approve this plan, so nothing has been saved.")
+    if (not state["decision"]["approved"] and state.get("revisions", 0) >= MAX_REVISIONS
+            and (state["decision"].get("feedback") or "").strip()):
+        lines.append(f"I stop after {MAX_REVISIONS} revisions; start a new plan to try other choices.")
     if cannot:
         lines.append("I can't do these for you: " + "; ".join(cannot)
                      + ". I only advise; enrolling, paying and applying are up to you.")
@@ -363,6 +447,7 @@ def build(checkpointer=None):
     b.add_node("course_agent", with_budget(course_agent_node))
     b.add_node("plan", plan)
     b.add_node("approve_plan", approve_plan)
+    b.add_node("read_feedback", with_budget(read_feedback), retry_policy=retry)   # Fix 9
     b.add_node("finish", finish)
     b.add_edge(START, "validate")
     b.add_conditional_edges("validate", route_after_validate,
@@ -370,9 +455,13 @@ def build(checkpointer=None):
     b.add_edge("ask_missing", "validate")
     for a, z in [("read_profile", "confirm_role"), ("confirm_role", "rank_paths"),
                  ("rank_paths", "choose_path"), ("choose_path", "skill_gap_agent"),
-                 ("skill_gap_agent", "course_agent"), ("course_agent", "plan"), ("plan", "approve_plan"), ("approve_plan", "finish"),
+                 ("skill_gap_agent", "course_agent"), ("course_agent", "plan"), ("plan", "approve_plan"),
                  ("finish", END)]:
         b.add_edge(a, z)
+    b.add_conditional_edges("approve_plan", route_after_approve,
+                            {"finish": "finish", "read_feedback": "read_feedback"})
+    b.add_conditional_edges("read_feedback", route_after_feedback,
+                            {"plan": "plan", "choose_path": "choose_path", "finish": "finish"})
     return b.compile(checkpointer=checkpointer or InMemorySaver())
 
 
