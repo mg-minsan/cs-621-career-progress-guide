@@ -104,6 +104,20 @@ def failed_usage(error: ValueError) -> list[dict]:
     return [usage] if usage is not None else []
 
 
+def transient_only(error: Exception) -> bool:
+    """Retry policy for AI nodes: retry when the world was busy (timeouts, 5xx),
+    never when the call itself was wrong (week 2: retry vs re-plan). A ToolError
+    or an unparseable reply would fail the same way again, and each retry is billed."""
+    from langgraph.types import default_retry_on
+    from lookups import ToolError
+    if isinstance(error, ToolError):
+        return False
+    status = getattr(error, "status_code", None)   # API errors: 429 / 5xx = busy; 4xx = our mistake
+    if isinstance(status, int):
+        return status == 429 or status >= 500
+    return default_retry_on(error)                 # connection errors yes; ValueError etc. no
+
+
 def _call(schema: type[BaseModel], user_text: str) -> tuple[BaseModel, dict]:
     """One structured call. Returns (parsed, usage). Raises if unparseable."""
     from langchain.messages import HumanMessage, SystemMessage
@@ -129,19 +143,24 @@ _ACTION_WORDS = {"enrol": "enrol in courses", "enroll": "enrol in courses", "pay
                  "apply": "apply for jobs", "fake": "falsify documents", "forge": "falsify documents"}
 
 
+def rules_read_profile(profile: dict, candidates: list[dict]) -> ProfileReading:
+    """The no-AI reading: baseline 2, and the fallback when Claude's reply is unusable."""
+    top = candidates[0] if candidates else None
+    second = candidates[1]["score"] if len(candidates) > 1 else 0
+    sure = bool(top) and top["score"] >= 0.8 and top["score"] - second >= 0.1
+    goal = (profile.get("goal") or "").lower()
+    m = re.search(r"(?:into|become|be an?|move to)\s+([a-z ]+?)(?:[.,;]|$)", goal)
+    titles = [m.group(1).strip()] if m else []
+    oos = sorted({v for k, v in _ACTION_WORDS.items() if re.search(rf"\b{k}", goal)})
+    return ProfileReading(role_id=top["role_id"] if sure else None,
+                          role_confidence=(top["score"] if sure else 0.5) if top else 0.0,
+                          role_reason="rule: top title match" if sure else "rule: no clear match",
+                          goal_target_titles=titles, out_of_scope=oos)
+
+
 def read_profile(profile: dict, candidates: list[dict]) -> tuple[ProfileReading, dict]:
     if fake_mode():
-        top = candidates[0] if candidates else None
-        second = candidates[1]["score"] if len(candidates) > 1 else 0
-        sure = bool(top) and top["score"] >= 0.8 and top["score"] - second >= 0.1
-        goal = (profile.get("goal") or "").lower()
-        m = re.search(r"(?:into|become|be an?|move to)\s+([a-z ]+?)(?:[.,;]|$)", goal)
-        titles = [m.group(1).strip()] if m else []
-        oos = sorted({v for k, v in _ACTION_WORDS.items() if re.search(rf"\b{k}", goal)})
-        return ProfileReading(role_id=top["role_id"] if sure else None,
-                              role_confidence=(top["score"] if sure else 0.5) if top else 0.0,
-                              role_reason="rule: top title match" if sure else "rule: no clear match",
-                              goal_target_titles=titles, out_of_scope=oos), {"step": "ProfileReading", "fake": True}
+        return rules_read_profile(profile, candidates), {"step": "ProfileReading", "fake": True}
     cand_text = "\n".join(f"- role_id {c['role_id']}: {c['role']} (sector: {c['sector']}, "
                           f"title-match score {c['score']})" for c in candidates)
     text = (f"{_profile_block(profile)}\n\nCandidate framework roles for the user's current job:\n"
@@ -154,15 +173,20 @@ def read_profile(profile: dict, candidates: list[dict]) -> tuple[ProfileReading,
 # --------------------------------------------------------------------------
 # Decision 2: which 2-3 next roles are worth showing?
 # --------------------------------------------------------------------------
+def rules_rank_paths(candidates: list[dict]) -> PathRanking:
+    """The no-AI ranking: baseline 2, and the fallback when Claude's reply is unusable."""
+    ordered = sorted(candidates, key=lambda c: (c["source"] != "goal", -c.get("overlap", 0)))
+    return PathRanking(paths=[RankedPath(role_id=c["role_id"],
+                                         kind="goal_match" if c["source"] == "goal" else
+                                         ("step_up" if c.get("overlap", 0) >= 0.4 else "switch"),
+                                         reason=f"rule: {c['source']} candidate")
+                              for c in ordered[:3]])
+
+
 def rank_paths(profile: dict, current: dict, candidates: list[dict],
                goal_titles: list[str]) -> tuple[PathRanking, dict]:
     if fake_mode():
-        ordered = sorted(candidates, key=lambda c: (c["source"] != "goal", -c.get("overlap", 0)))
-        return PathRanking(paths=[RankedPath(role_id=c["role_id"],
-                                             kind="goal_match" if c["source"] == "goal" else
-                                             ("step_up" if c.get("overlap", 0) >= 0.4 else "switch"),
-                                             reason=f"rule: {c['source']} candidate")
-                                  for c in ordered[:3]]), {"step": "PathRanking", "fake": True}
+        return rules_rank_paths(candidates), {"step": "PathRanking", "fake": True}
     cand_text = "\n".join(f"- role_id {c['role_id']}: {c['role']} (sector: {c['sector']}; "
                           f"found by {c['source']}; skill overlap {c.get('overlap', 'n/a')})"
                           for c in candidates)

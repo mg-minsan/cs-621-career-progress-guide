@@ -86,7 +86,7 @@ def order_skills(state: GapState) -> dict:
 
 
 def build():
-    retry = RetryPolicy(max_attempts=3)            # transient API errors
+    retry = RetryPolicy(max_attempts=3, retry_on=llm_steps.transient_only)   # transient errors only
     b = StateGraph(GapState)
     b.add_node("compute_gaps", compute_gaps)
     b.add_node("explain_gaps", explain_gaps, retry_policy=retry)

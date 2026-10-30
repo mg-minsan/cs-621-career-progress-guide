@@ -138,7 +138,7 @@ def _alternative(cands: list[dict], chosen: dict) -> dict | None:
 
 def _pick_chunk(items: list[dict]):
     """Retry only this chunk, never previously completed (and billed) chunks."""
-    policy = RetryPolicy(max_attempts=3)
+    policy = RetryPolicy(max_attempts=3, retry_on=llm_steps.transient_only)
     for attempt in range(policy.max_attempts):
         try:
             return llm_steps.pick_courses(items)
@@ -188,7 +188,7 @@ def pick_courses(state: CourseState) -> dict:
 
 
 def build():
-    retry = RetryPolicy(max_attempts=3)            # transient API errors
+    retry = RetryPolicy(max_attempts=3, retry_on=llm_steps.transient_only)   # transient errors only
     b = StateGraph(CourseState)
     b.add_node("search", search)
     b.add_node("rewrite_queries", rewrite_queries, retry_policy=retry)

@@ -87,8 +87,17 @@ def validate(state: State) -> dict:
     except (TypeError, ValueError):
         missing.append("age (a number from 16 to 100)")
     bal = p.get("credit_balance")
+    if bal is not None:                            # "abc" or -100 used to crash later (fix 1)
+        try:
+            bal = float(bal)
+            if bal < 0:
+                raise ValueError
+            p["credit_balance"] = bal
+        except (TypeError, ValueError):
+            missing.append("credit_balance (a dollar amount, 0 or more; leave it out if unsure)")
+            bal = None
     if bal is not None and res and "age (a number from 16 to 100)" not in missing:
-        if float(bal) > credit_entitlement(Person(res, p["age"])):
+        if bal > credit_entitlement(Person(res, p["age"])):
             missing.append("credit_balance (higher than anyone this age can have; please check)")
     return {"profile": p, "missing": missing}
 
@@ -118,12 +127,19 @@ def ask_missing(state: State) -> dict:
 # --------------------------------------------------------------------------
 def read_profile(state: State) -> dict:
     cands = search_roles(state["profile"]["role"], limit=8)
-    reading, usage = llm_steps.read_profile(state["profile"], cands)
+    extra = {}
+    try:
+        reading, usage = llm_steps.read_profile(state["profile"], cands)
+        usage = [usage]
+    except ValueError as e:                        # unusable reply: degrade to the rules, never crash
+        reading, usage = llm_steps.rules_read_profile(state["profile"], cands), llm_steps.failed_usage(e)
+        extra = {"fallbacks": ["read_profile"],
+                 "notes": [f"read_profile: AI output unusable ({str(e)[:120]}...); used rules"]}
     r = reading.model_dump()
     if r["role_id"] is not None and r["role_id"] not in {c["role_id"] for c in cands}:
         r["role_id"] = None   # model picked off the menu: ignore it, user will choose
         r["role_reason"] += " (model choice was not in the shortlist; ignored)"
-    return {"role_candidates": cands, "reading": r, "usage": [usage]}
+    return {"role_candidates": cands, "reading": r, "usage": usage, **extra}
 
 
 def confirm_role(state: State) -> dict:
@@ -170,10 +186,16 @@ def rank_paths(state: State) -> dict:
             cands.append({**c, "source": "skill overlap"})
     if not cands:
         raise ToolError("No candidate paths found for this role.")
-    ranking, usage = llm_steps.rank_paths(state["profile"], get_role(cur), cands,
-                                          state["reading"]["goal_target_titles"])
+    paths, notes, fallbacks = [], [], []
+    try:
+        ranking, usage = llm_steps.rank_paths(state["profile"], get_role(cur), cands,
+                                              state["reading"]["goal_target_titles"])
+        usage = [usage]
+    except ValueError as e:                        # unusable reply: degrade to the rules, never crash
+        ranking, usage = llm_steps.rules_rank_paths(cands), llm_steps.failed_usage(e)
+        fallbacks.append("rank_paths")
+        notes.append(f"rank_paths: AI output unusable ({str(e)[:120]}...); used rules")
     by_id = {c["role_id"]: c for c in cands}
-    paths, notes = [], []
     for p in ranking.paths:
         if p.role_id in by_id:                     # code enforces the menu
             paths.append({**by_id[p.role_id], "kind": p.kind, "reason": p.reason,
@@ -195,8 +217,8 @@ def rank_paths(state: State) -> dict:
         status = "not_found"
         msg = (f"Your goal ({', '.join(titles)}) does not match any role in the SkillsFuture "
                "Skills Framework, so these are nearby roles instead.")
-    return {"path_candidates": cands, "paths": paths[:3], "usage": [usage], "notes": notes,
-            "goal_status": status, "goal_message": msg}
+    return {"path_candidates": cands, "paths": paths[:3], "usage": usage, "notes": notes,
+            "fallbacks": fallbacks, "goal_status": status, "goal_message": msg}
 
 
 def choose_path(state: State) -> dict:
@@ -208,6 +230,8 @@ def choose_path(state: State) -> dict:
         try:
             rid = int(answer["role_id"])
             get_role(rid)
+            if rid == state["current_role_id"]:    # a 0-skill, $0 "plan" helps nobody (fix 1)
+                raise ValueError("that is your current role; pick a different one")
             return {"target_role_id": rid, "checkpoints": ["choose_path"]}
         except (KeyError, TypeError, ValueError, ToolError) as e:
             payload = {**payload, "error": f"Invalid answer ({e}). Reply with a valid role_id."}
@@ -299,7 +323,7 @@ def finish(state: State) -> dict:
 
 # --------------------------------------------------------------------------
 def build(checkpointer=None):
-    retry = RetryPolicy(max_attempts=3)            # transient API errors (durability)
+    retry = RetryPolicy(max_attempts=3, retry_on=llm_steps.transient_only)   # transient errors only
     b = StateGraph(State)
     b.add_node("validate", validate)
     b.add_node("ask_missing", ask_missing)
