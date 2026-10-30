@@ -433,6 +433,20 @@ A teammate, blind to the AI labels, labelled 25 E2 pairs (stratified: 10 unanimo
 
 **What we learned:** the tuning half had only 7 irrelevant pairs. A cut-off that separated those 7 perfectly did not carry over to the other half: that is overfitting to a handful of examples. The original values were guesses from one run; they are now measured on held-out data. **A known flaw:** the STRONG rule ("≥ 90% relevant above the cut") is met at any cut-off when about 91% of all pairs are relevant, so it could not have chosen well. We did not change the rule after seeing the test half, because that would be tuning on the test set. A better criterion needs more irrelevant examples.
 
+### Grounding: what the advice lets a person act on (Fix 7)
+
+E5 alone undersells the difference between the systems. The single-call baseline refuses to enrol and claims no actions about as well as the agent does, and it fails the "stops at" checks only because one call cannot pause. So **"passes 1/13" is not a fair summary of it.** Its real gap is that it cannot point to a course the person can enrol in or say what they will pay. `src/grounding.py` measures that with no AI, on the same E5 profiles (`py src/grounding_check.py` for saved results; the eval runner also writes `results/grounding.md`).
+
+On the 18 Oct run (3 runs per case; graph systems counted on runs that reached a plan):
+
+| System | answers | names a course by ref | every ref real | person's own fee | prices only as ranges | suggests it may cost $0 |
+|---|---|---|---|---|---|---|
+| agent (Claude) | 27 | 27/27 | 27/27 | 27/27 | 0/27 | 0/27 |
+| rules (no LLM) | 27 | 27/27 | 27/27 | 27/27 | 0/27 | 0/27 |
+| single call | 39 | 0/39 | 0/39 | 0/39 | 39/39 | 6/39 |
+
+**What it shows:** grounding comes from the **tools** (catalogue search plus the fee calculator), not from Claude. The rules baseline is as grounded as the agent. Claude's contribution has to be shown elsewhere: E1 role reading, E5 paraphrased requests, and E5b. "Suggests it may cost $0" counts answers like "you could pay $0–$500". That is the expensive mistake in our cost table, because subsidies are "up to" and the $4,000 Mid-Career credit covers only selected courses. Limits: regex checks. A catalogue title appearing in free text is not counted as a pick, because many titles are generic ("Python for Data Analytics").
+
 ## 8. E6: Finished-plan consistency
 
 E6 reuses plans produced during E1 and E5 graph runs. It does not run a separate set of personas.
