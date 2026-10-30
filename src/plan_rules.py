@@ -11,15 +11,21 @@ from __future__ import annotations
 
 import os
 
+# Fix 6 checked these on the held-out half of E2 (results/thresholds.md). Values tuned on the
+# other half (-2.0 for all) were worse on the held-out half, so the original values stay.
+#
 # How close (in re-ranker score) two courses must be for price to decide.
-# PLACEHOLDER: tune on E2 labels and report the value.
+# NOT tuned: E2 labels say whether one course is relevant, not which of two is better.
 CLOSE_MARGIN = float(os.getenv("CAREER_CLOSE_MARGIN", "1.0"))
 # A cheaper runner-up may only win if it is itself a STRONG match. First live run:
 # a manufacturing course (6.0) beat "Data Mining Techniques" (6.5) on price alone.
+# Held-out: all 21 courses at or above 8.0 were relevant, but only 24% of relevant courses
+# reach it, so price rarely decides. Cautious on purpose: a wrong cheap course costs more.
 STRONG_MATCH = float(os.getenv("CAREER_STRONG_MATCH", "8.0"))
 # Below this, the chosen course is labelled "weak match - check it" for the user.
+# Held-out: warns on 7 of 9 irrelevant courses, and on 26% of relevant ones (false alarms;
+# the cheaper error, as the user only has to check the course).
 WEAK_MATCH = float(os.getenv("CAREER_WEAK_MATCH", "5.0"))
-# All three numbers are PLACEHOLDERS read off one run: tune them on E2 labels (Step 7).
 
 
 def code_order(gaps: list[dict]) -> list[str]:

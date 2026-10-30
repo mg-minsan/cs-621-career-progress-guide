@@ -47,8 +47,10 @@ VECTOR_IDS = INDEX_DIR / "course_vector_ids.json"
 EMBED_MODEL = os.getenv("CAREER_EMBED_MODEL", "BAAI/bge-small-en-v1.5")
 RERANK_MODEL = os.getenv("CAREER_RERANK_MODEL", "cross-encoder/ms-marco-MiniLM-L-6-v2")
 QUERY_PREFIX = "Represent this sentence for searching relevant passages: "  # bge convention
-# Re-ranker score a course must reach to count as a "strong" match.
-# PLACEHOLDER: tune this on your E2 labels (Step 7). Report the value you chose.
+# Re-ranker score a course must reach to be shown at all ("strong" match).
+# Fix 6 (results/thresholds.md): on the held-out half of E2 (8 skills, 95 unanimous pairs) 0.0
+# keeps 97% of relevant courses and hides 6 of 9 irrelevant ones. Tuning on the other half
+# chose -2.0, which hid only 4 of 9 on the held-out half, so 0.0 stays.
 RERANK_GOOD = float(os.getenv("CAREER_RERANK_GOOD", "0.0"))
 
 STOP = {"and", "of", "the", "a", "an", "to", "in", "for", "on", "with", "by", "or", "is",
