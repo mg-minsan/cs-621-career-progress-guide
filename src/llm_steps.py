@@ -30,9 +30,11 @@ Modes
 """
 from __future__ import annotations
 
+import contextvars
 import json
 import os
 import re
+from contextlib import contextmanager
 from typing import Literal
 
 from pydantic import BaseModel, Field
@@ -41,6 +43,10 @@ MODEL_NAME = os.getenv("CAREER_MODEL", "anthropic:claude-sonnet-5-5")
 # USD per million tokens (input, output). Sonnet 5.5 from Anthropic's pricing page.
 PRICES = {"anthropic:claude-sonnet-5-5": (2.0, 10.0),
           "anthropic:claude-haiku-4-5-20251001": (1.0, 5.0)}
+MAX_TOKENS = 4000
+# Fix 3 (week 8, unbounded consumption): a budget per plan, held by the graph, not the model.
+# A full plan with ~50 skill gaps costs about $0.15; $0.50 leaves room without letting a loop run on.
+MAX_RUN_USD = float(os.getenv("CAREER_MAX_RUN_USD", "0.50"))
 
 
 def fake_mode() -> bool:
@@ -88,7 +94,7 @@ def _model():
     from langchain.chat_models import init_chat_model
     # 4000, not 1500: thinking tokens count towards max_tokens, and a 49-skill order
     # was cut off at 1500 (E1 p11, 2026-10-18). You only pay for tokens used.
-    return init_chat_model(MODEL_NAME, max_tokens=4000, timeout=90, max_retries=3)
+    return init_chat_model(MODEL_NAME, max_tokens=MAX_TOKENS, timeout=90, max_retries=3)
 
 
 class OutputParseError(ValueError):
@@ -102,6 +108,43 @@ class OutputParseError(ValueError):
 def failed_usage(error: ValueError) -> list[dict]:
     usage = getattr(error, "usage", None)
     return [usage] if usage is not None else []
+
+
+class BudgetExceeded(ValueError):
+    """The next call could push this plan past MAX_RUN_USD, so it was never sent.
+    A ValueError on purpose: every AI step already falls back to its rules version on one."""
+    usage = None
+
+
+_BUDGET: contextvars.ContextVar[dict | None] = contextvars.ContextVar("career_budget", default=None)
+
+
+@contextmanager
+def budget(spent_usd: float, cap_usd: float | None = None):
+    """Hold the plan's budget while one graph step (and any sub-agent it runs) calls the AI.
+    spent_usd is what the run has already paid, from state["usage"]; calls inside add to it."""
+    ledger = {"spent": spent_usd, "cap": MAX_RUN_USD if cap_usd is None else cap_usd, "capped": False}
+    token = _BUDGET.set(ledger)
+    try:
+        yield ledger
+    finally:
+        _BUDGET.reset(token)
+
+
+def _worst_case_usd(user_text: str) -> float:
+    """Upper bound for one call, known before sending it: ~3 characters per input token
+    (real text averages ~4) and every allowed output token used."""
+    pin, pout = PRICES.get(MODEL_NAME, (0.0, 0.0))
+    return (len(SYSTEM) + len(user_text)) / 3 / 1e6 * pin + MAX_TOKENS / 1e6 * pout
+
+
+def _check_budget(step: str, user_text: str) -> dict | None:
+    ledger = _BUDGET.get()
+    if ledger is not None and ledger["spent"] + _worst_case_usd(user_text) > ledger["cap"]:
+        ledger["capped"] = True
+        raise BudgetExceeded(f"spend cap reached (${ledger['spent']:.4f} of ${ledger['cap']:.2f} used); "
+                             f"{step} was not sent to the AI")
+    return ledger
 
 
 def transient_only(error: Exception) -> bool:
@@ -121,6 +164,7 @@ def transient_only(error: Exception) -> bool:
 def _call(schema: type[BaseModel], user_text: str) -> tuple[BaseModel, dict]:
     """One structured call. Returns (parsed, usage). Raises if unparseable."""
     from langchain.messages import HumanMessage, SystemMessage
+    ledger = _check_budget(schema.__name__, user_text)   # before any money is spent
     # method="json_schema": Sonnet 5.5 does not support the older forced-tool-call
     # method (LangChain warned about it in our first live run).
     llm = _model().with_structured_output(schema, method="json_schema", include_raw=True)
@@ -130,6 +174,8 @@ def _call(schema: type[BaseModel], user_text: str) -> tuple[BaseModel, dict]:
     pin, pout = PRICES.get(MODEL_NAME, (0.0, 0.0))
     usage = {"step": schema.__name__, "model": MODEL_NAME, "input_tokens": i, "output_tokens": o,
              "cost_usd": round(i / 1e6 * pin + o / 1e6 * pout, 6)}
+    if ledger is not None:                                # billed even if unparseable
+        ledger["spent"] += usage["cost_usd"]
     if out.get("parsed") is None:
         raise OutputParseError(
             f"Model output did not match {schema.__name__}: {out.get('parsing_error')}", usage)

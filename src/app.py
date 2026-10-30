@@ -22,6 +22,7 @@ import os
 import re
 import sys
 import uuid
+from html import escape
 from pathlib import Path
 
 import streamlit as st
@@ -98,6 +99,9 @@ def html(s: str) -> None:
     st.markdown(s, unsafe_allow_html=True)
 
 
+plain = art.plain        # Fix 3: AI- and catalogue-written text is shown as text, never as Markdown/HTML
+
+
 def heading(icon: str, text: str, sub: str = "") -> None:
     """Icon + st.subheader (kept as a real subheader so tests and screen readers see it)."""
     a, b = st.columns([1, 12], vertical_alignment="center")
@@ -142,7 +146,7 @@ with st.sidebar:
     if values.get("usage"):
         cost = sum(u.get("cost_usd", 0) for u in values["usage"])
         st.metric("AI cost so far", f"${cost:.4f}")
-        st.caption(f"{len(values['usage'])} AI steps")
+        st.caption(f"{len(values['usage'])} AI steps · budget ${g.llm_steps.MAX_RUN_USD:.2f} per plan")
     if values.get("checkpoints"):
         st.caption("Checkpoints answered: " + " → ".join(values["checkpoints"]))
     html('<div style="margin-top:1.2rem;font-size:.78rem;opacity:.7">I only advise. I never enrol, '
@@ -233,13 +237,13 @@ elif where == "confirm_role":
     if payload.get("error"):
         st.error(payload["error"])
     if payload.get("cannot_do"):
-        st.warning("I can't do these for you: " + "; ".join(payload["cannot_do"])
+        st.warning("I can't do these for you: " + "; ".join(plain(x) for x in payload["cannot_do"])
                    + ". I only advise; enrolling, paying and applying are up to you.")
     cands = payload["candidates"]
     sug = payload.get("suggested_role_id")
     if sug:
         st.success(f"My suggestion: **{next((c['role'] for c in cands if c['role_id'] == sug), sug)}** "
-                   f"(confidence {payload['confidence']:.0%}). {payload['reason']}")
+                   f"(confidence {payload['confidence']:.0%}). {plain(payload['reason'])}")
     else:
         st.info("I'm not sure which one fits, so please pick.")
     labels = {c["role_id"]: f"**{c['role']}**  ·  {c['sector']}  ·  name match {c['score']:.0%}" for c in cands}
@@ -247,7 +251,7 @@ elif where == "confirm_role":
     pick = st.radio("Your job", ids, index=ids.index(sug) if sug in ids else 0,
                     format_func=lambda i: labels[i], label_visibility="collapsed")
     if payload.get("goal_titles"):
-        html('I read your goal as: ' + "".join(f'<span class="pill b">{t}</span>' for t in payload["goal_titles"]))
+        html('I read your goal as: ' + "".join(f'<span class="pill b">{plain(escape(t))}</span>' for t in payload["goal_titles"]))
     st.write("")
     if st.button("Yes, this is my job", type="primary"):
         resume(graph, cfg, {"role_id": int(pick)})
@@ -257,7 +261,7 @@ elif where == "choose_path":
     heading("choose_path", "Where would you like to go next?",
             "Fewer skills to gain = a faster move. Pick one to see the full costed plan.")
     if payload.get("goal_message"):
-        st.warning(payload["goal_message"])
+        st.warning(plain(payload["goal_message"]))
     if payload.get("error"):
         st.error(payload["error"])
     for n, p in enumerate(payload["paths"]):
@@ -270,7 +274,7 @@ elif where == "choose_path":
                        f'{"🎯 matches your goal" if goal_match else "↗ nearby move"}</span>'
                        f'<span class="pill b">{p["sector"]}</span>', unsafe_allow_html=True)
             if p.get("reason"):
-                b.caption(p["reason"])
+                b.caption(plain(p["reason"]))
             c.markdown(f'<div style="text-align:center"><div style="font-family:\'DM Serif Display\',serif;'
                        f'font-size:2.3rem;line-height:1;color:{art.TEAL_DARK}">{p["new_skills"] + p["level_ups"]}</div>'
                        f'<div class="small" style="font-size:.8rem">skills to gain<br>{p["new_skills"]} new · '
@@ -342,6 +346,10 @@ elif where == "approve_plan":
     for n in c["notes"]:
         st.caption("• " + n)
     st.caption(f"Funding rules checked on {c['rules_checked_on']}. Check course pages before you enrol.")
+    spend = plan.get("spend") or {}
+    if spend.get("capped"):                       # Fix 3: say so when the budget changed the plan
+        st.warning(f"This plan reached its ${spend['cap_usd']:.2f} AI budget, so some steps used the "
+                   "simpler rule-based version. The plan still passed all its checks.")
 
     for key, items in plan["phases"].items():
         html(art.phase_html(key, len(items)))
@@ -355,20 +363,21 @@ elif where == "approve_plan":
                              + (f" · {money(course.get('your_fee'))}" if course else " · no course found")):
                 why = (it.get("why") or "").strip()
                 if why and not why.startswith("rule:"):      # Fix 2: show the AI's reason (rules mode has none)
-                    st.caption(f"Why it matters: {why}")
+                    st.caption(f"Why it matters: {plain(why)}")
                 if not course:
                     st.info(it.get("message") or "No strong course found. Search this skill yourself.")
                     continue
                 if weak:
                     st.warning("Weak match: check this course really covers the skill.")
-                st.markdown(f"**{course['title']}**  \n{course['provider']} · {course.get('hours') or '?'} h · "
+                st.markdown(f"**{plain(course['title'])}**  \n{plain(course['provider'])} · {course.get('hours') or '?'} h · "
                             f"course ref `{course['course_ref']}` · you pay **{money(course.get('your_fee'))}**")
-                st.caption(it["why_this_course"])
+                st.caption(plain(it["why_this_course"]))
                 if course.get("schemes"):
                     html("".join(f'<span class="pill t">{s}</span>' for s in course["schemes"]))
                 alt = it.get("alternative")
                 if alt:
-                    st.caption(f"Alternative: {alt['title']} ({alt['provider']}) · you pay {money(alt.get('your_fee'))}")
+                    st.caption(f"Alternative: {plain(alt['title'])} ({plain(alt['provider'])}) · "
+                               f"you pay {plain(money(alt.get('your_fee')))}")
 
     st.write("")
     with st.container(key="card2_decide"):
@@ -387,9 +396,9 @@ elif where == "done":
         html(art.banner_html("Your plan is ready!",
                              f"{plan['current_role']} → {plan['target_role']} · you pay "
                              f"{money(plan['cost']['out_of_pocket'])}"))
-        st.success(values["final_message"])
+        st.success(plain(values["final_message"]))
     else:
-        st.info(values["final_message"])
+        st.info(plain(values["final_message"]))
     a, b, _ = st.columns([1.3, 1.1, 2])
     a.download_button("Download plan (JSON)", json.dumps(plan, indent=2),
                       file_name="career_plan.json", mime="application/json")
@@ -398,7 +407,7 @@ elif where == "done":
     with st.expander("Agent trace (for the report)"):
         st.write("Checkpoints:", " → ".join(values.get("checkpoints", [])))
         for n in values.get("notes", []):
-            st.caption("• " + n)
+            st.caption("• " + plain(n))
         st.dataframe([{k: u.get(k) for k in ("step", "input_tokens", "output_tokens", "cost_usd")}
                       for u in values.get("usage", [])], width="stretch")
 
