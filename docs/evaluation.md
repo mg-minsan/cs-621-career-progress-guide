@@ -412,6 +412,27 @@ The case passes because all five checks pass. If `approve_plan` were absent from
 
 The grader is **inverted**: a case passes when the attack fails. It reports two numbers separately. *Counted* is what reached the user, meaning the final pick after code checks plus the reason text. *Info* (`info:model_resisted`) is whether the model followed the attack before code caught it. This separates "model fooled" from "user harmed". In a dry run, the rules baseline lost ci01 (it trusts the search ranking) and resisted ci02–ci05 because it never reads text.
 
+### Checking the labels themselves: human check (Fix 5)
+
+A teammate, blind to the AI labels, labelled 25 E2 pairs (stratified: 10 unanimous-Y, 8 unanimous-N, 7 split votes) and 10 E1 rule labels (`src/make_human_check.py`, scored by `src/score_human_check.py`, results in `results/human_check.md`).
+
+- **E2:** the teammate agreed with the AI majority on 18 of the 19 pairs they decided (κ = 0.89). Agreement was 8/8 on unanimous-Y and 8/8 on unanimous-N. With 19 rows the honest range is about 75–99%. 6 answers were Unsure, 4 of them on pairs where the AI judges also split, so we treat the 12 split pairs (6%) as ambiguous, not as errors.
+- **Per judge:** gpt-mini-5 19/19, DeepSeek 17/19, Claude 17/19. Claude also judges Claude's own picks (E3b), and it was the least aligned with the human, which is a reason to keep the 3-judge majority.
+- **E1:** 10/10 rule labels agreed with.
+
+### Thresholds: tuned on one half, tested on the other (Fix 6)
+
+`py src/tune_thresholds.py` scores all 186 pairs with the app's re-ranker. It splits the 15 skills into two halves (whole skills on each side, with the irrelevant pairs balanced), tunes on unanimous rows in one half, and tests on the other. **The rule, written before running: adopt a tuned value only if it beats the current value on the held-out half.**
+
+| Cut-off | Current | Tuned | Held-out (95 unanimous pairs) | Decision |
+|---|---|---|---|---|
+| RERANK_GOOD (hide course) | 0.0 | -2.0 | current hides 6/9 irrelevant, tuned 4/9; both keep ≥97% of relevant | keep 0.0 |
+| WEAK_MATCH (warn user) | 5.0 | -2.0 | current warns on 7/9 bad picks (and 26% of good ones), tuned 4/9 | keep 5.0 |
+| STRONG_MATCH (may win on price) | 8.0 | -2.0 | current: 21/21 relevant, tuned lets irrelevant ones win (94%) | keep 8.0 |
+| CLOSE_MARGIN | 1.0 | not tuned | relevance labels cannot say which of two courses is better | keep 1.0 |
+
+**What we learned:** the tuning half had only 7 irrelevant pairs. A cut-off that separated those 7 perfectly did not carry over to the other half: that is overfitting to a handful of examples. The original values were guesses from one run; they are now measured on held-out data. **A known flaw:** the STRONG rule ("≥ 90% relevant above the cut") is met at any cut-off when about 91% of all pairs are relevant, so it could not have chosen well. We did not change the rule after seeing the test half, because that would be tuning on the test set. A better criterion needs more irrelevant examples.
+
 ## 8. E6: Finished-plan consistency
 
 E6 reuses plans produced during E1 and E5 graph runs. It does not run a separate set of personas.
