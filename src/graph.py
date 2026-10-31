@@ -219,6 +219,14 @@ def rank_paths(state: State) -> dict:
         status, msg = "none", ""
     elif goal_ids:
         status, msg = "matched", ""
+    elif ai_goal := next((p for p in paths[:3] if p["kind"] == "goal_match"), None):
+        # Fix 8b, found by held-out persona h01 (Enrolled Nurse, goal "registered nurse"): no
+        # framework title matched, but the AI judged a shortlisted role (Staff Nurse) to be the
+        # goal. The screen said "does not match any role" AND "matches your goal". Now it says
+        # what happened; the user still confirms it at choose_path.
+        status = "matched"
+        msg = (f"Your goal ({', '.join(titles)}) is not a job title in the SkillsFuture Skills Framework. "
+               f"{ai_goal['role']} looks like the closest match: check it is what you mean.")
     else:                                          # say so, never quietly drop a goal
         status = "not_found"
         msg = (f"Your goal ({', '.join(titles)}) does not match any role in the SkillsFuture "
