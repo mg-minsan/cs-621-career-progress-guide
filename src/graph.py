@@ -20,6 +20,7 @@ Design ideas used (cite these in the report):
 """
 from __future__ import annotations
 
+import functools
 import operator
 from typing import Annotated, Any
 
@@ -64,6 +65,7 @@ class State(TypedDict, total=False):
     usage: Annotated[list[dict], operator.add]        # tokens + cost per AI call
     notes: Annotated[list[str], operator.add]
     fallbacks: Annotated[list[str], operator.add]     # agent steps where code replaced the AI
+    spend_capped: bool                                # Fix 3: the budget stopped at least one AI call
 
 
 # --------------------------------------------------------------------------
@@ -290,7 +292,9 @@ def plan(state: State) -> dict:
               "target_role_tasks": get_role_tasks(state["target_role_id"]),
               "gap_summary": {"new_skills": new, "level_ups": len(state["gaps"]) - new},
               "phases": phases, "cost": cost,
-              "total_hours": round(sum(c.get("hours") or 0 for c in chosen), 1)}
+              "total_hours": round(sum(c.get("hours") or 0 for c in chosen), 1),
+              "spend": {"ai_cost_usd": round(spent(state), 4), "cap_usd": llm_steps.MAX_RUN_USD,
+                        "capped": bool(state.get("spend_capped"))}}
     violations = check_plan(result, state["gaps"])
     if violations:                                 # postcondition: fail loudly
         raise ToolError(f"Plan failed its checks: {violations}")
@@ -314,6 +318,9 @@ def finish(state: State) -> dict:
              f"(rules checked {c['rules_checked_on']})."]
     if state.get("goal_message"):
         lines.append(state["goal_message"])
+    if state.get("spend_capped"):
+        lines.append(f"To stay within the ${llm_steps.MAX_RUN_USD:.2f} AI budget for one plan, "
+                     "some steps used the simpler rule-based version.")
     lines.append("You approved this plan." if state["decision"]["approved"]
                  else "You did not approve this plan, so nothing has been saved.")
     if cannot:
@@ -323,17 +330,37 @@ def finish(state: State) -> dict:
 
 
 # --------------------------------------------------------------------------
+# Fix 3: spend cap per plan (week 8: "a budget per run, held by the loop")
+# --------------------------------------------------------------------------
+def spent(state: State) -> float:
+    return sum(u.get("cost_usd", 0) for u in state.get("usage", []))
+
+
+def with_budget(node):
+    """Run an AI step inside the plan's budget. A call that could go past the cap is
+    never sent; that step uses its rules version, and the user is told."""
+    @functools.wraps(node)
+    def run(state: State):
+        with llm_steps.budget(spent(state)) as ledger:
+            out = node(state)
+        if ledger["capped"] and isinstance(out, dict):
+            out = {**out, "spend_capped": True}
+        return out
+    return run
+
+
+# --------------------------------------------------------------------------
 def build(checkpointer=None):
     retry = RetryPolicy(max_attempts=3, retry_on=llm_steps.transient_only)   # transient errors only
     b = StateGraph(State)
     b.add_node("validate", validate)
     b.add_node("ask_missing", ask_missing)
-    b.add_node("read_profile", read_profile, retry_policy=retry)
+    b.add_node("read_profile", with_budget(read_profile), retry_policy=retry)
     b.add_node("confirm_role", confirm_role)
-    b.add_node("rank_paths", rank_paths, retry_policy=retry)
+    b.add_node("rank_paths", with_budget(rank_paths), retry_policy=retry)
     b.add_node("choose_path", choose_path)
-    b.add_node("skill_gap_agent", skill_gap_agent_node)    # AI retries live inside each agent
-    b.add_node("course_agent", course_agent_node)
+    b.add_node("skill_gap_agent", with_budget(skill_gap_agent_node))    # AI retries live inside each agent
+    b.add_node("course_agent", with_budget(course_agent_node))
     b.add_node("plan", plan)
     b.add_node("approve_plan", approve_plan)
     b.add_node("finish", finish)

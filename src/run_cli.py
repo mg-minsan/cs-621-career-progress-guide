@@ -72,6 +72,9 @@ def show(payload: dict) -> None:
               f"  = you pay ${c['out_of_pocket']:,.2f}   |  about {plan['total_hours']:,.0f} training hours")
         for n in c["notes"]:
             print("   *", n)
+        spend = plan.get("spend") or {}
+        if spend.get("capped"):                   # Fix 3
+            print(f"   ! AI budget (${spend['cap_usd']:.2f}) reached: some steps used the rule-based version")
 
 
 def answer_for(payload: dict):
