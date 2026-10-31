@@ -52,7 +52,11 @@ def show(payload: dict) -> None:
         for phase, items in plan["phases"].items():
             print(f"\n  {phase.upper()}")
             for it in items:
-                print(f"    {it['skill']} (level {it['need_level']}, {it['status']})")
+                core = " [core]" if it.get("importance") == "core" else ""
+                print(f"    {it['skill']}{core} (level {it['need_level']}, {it['status']})")
+                why = (it.get("why") or "").strip()
+                if why and not why.startswith("rule:"):     # Fix 2: the AI's reason, shown at last
+                    print(f"      why: {why}")
                 for label, c in (("take", it["course"]), ("or", it["alternative"])):
                     if c:
                         fee = "unknown" if c.get("your_fee") is None else f"${c['your_fee']:,.2f}"

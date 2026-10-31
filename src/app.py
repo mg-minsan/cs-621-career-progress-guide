@@ -348,9 +348,14 @@ elif where == "approve_plan":
         for it in items:
             course = it["course"]
             weak = it.get("match_quality") == "weak"
-            with st.expander(f"{'⚠️ ' if weak else ''}**{it['skill']}** · level {it['need_level']} "
+            core = it.get("importance") == "core"
+            with st.expander(f"{'⚠️ ' if weak else ''}**{it['skill']}**{' · ⭐ core' if core else ''}"
+                             f" · level {it['need_level']} "
                              f"({'new' if it['status'] == 'missing' else 'level up'})"
                              + (f" · {money(course.get('your_fee'))}" if course else " · no course found")):
+                why = (it.get("why") or "").strip()
+                if why and not why.startswith("rule:"):      # Fix 2: show the AI's reason (rules mode has none)
+                    st.caption(f"Why it matters: {why}")
                 if not course:
                     st.info(it.get("message") or "No strong course found. Search this skill yourself.")
                     continue
