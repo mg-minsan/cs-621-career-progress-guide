@@ -350,6 +350,11 @@ elif where == "approve_plan":
     if spend.get("capped"):                       # Fix 3: say so when the budget changed the plan
         st.warning(f"This plan reached its ${spend['cap_usd']:.2f} AI budget, so some steps used the "
                    "simpler rule-based version. The plan still passed all its checks.")
+    if plan.get("revision"):                      # Fix 9: what changed on the user's feedback
+        st.info(f"Revision {plan['revision']} of {plan.get('max_revisions', 2)}: "
+                f"{plain(plan.get('revision_note') or '')}")
+    if plan.get("skipped"):
+        st.caption("Skipped at your request (no course in this plan): " + ", ".join(plain(s) for s in plan["skipped"]))
 
     for key, items in plan["phases"].items():
         html(art.phase_html(key, len(items)))
@@ -381,12 +386,20 @@ elif where == "approve_plan":
 
     st.write("")
     with st.container(key="card2_decide"):
-        fb = st.text_input("Anything to tell me? (optional)")
-        a, b, _ = st.columns([1.2, 1, 3])
+        left = plan.get("max_revisions", 2) - plan.get("revision", 0)
+        fb = st.text_input("Not quite right? Say what to change",
+                           placeholder="e.g. cheaper · less time · skip Python · a different job")
+        a, b, c, _ = st.columns([1.2, 1.1, 1, 2.2])
         if a.button("Approve plan", type="primary"):
             resume(graph, cfg, {"approved": True, "feedback": fb})
-        if b.button("Not for me"):
-            resume(graph, cfg, {"approved": False, "feedback": fb})
+        if b.button("Change it", disabled=left <= 0,
+                    help=f"{left} revision(s) left" if left > 0 else "No revisions left: start a new plan"):
+            if fb.strip():
+                resume(graph, cfg, {"approved": False, "feedback": fb})
+            else:
+                st.warning("Type what to change first.")
+        if c.button("Stop here"):
+            resume(graph, cfg, {"approved": False, "feedback": ""})
 
 # ------------------------------------------------------------------ done
 elif where == "done":

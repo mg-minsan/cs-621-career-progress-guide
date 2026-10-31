@@ -88,9 +88,14 @@ def test_action_request_is_declined_in_final_message():                    # E5 
 
 def test_rejected_plan_is_not_reported_as_approved():
     ans = happy_answers()
-    ans["approve_plan"] = [{"approved": False, "feedback": "too long"}]
-    out, _ = run(BASE, ans)
-    assert "did not approve" in out["final_message"]
+    ans["approve_plan"] = [{"approved": False, "feedback": ""}]          # "Stop here"
+    out, seen = run(BASE, ans)
+    assert "did not approve" in out["final_message"] and seen.count("approve_plan") == 1
+    # Fix 9: feedback now revises the plan instead of ending the run; stopping after it still works
+    ans = happy_answers()
+    ans["approve_plan"] = [{"approved": False, "feedback": "too long"}, {"approved": False, "feedback": ""}]
+    out, seen = run(BASE, ans)
+    assert seen.count("approve_plan") == 2 and "did not approve" in out["final_message"]
 
 
 def test_courses_attached_with_personal_fee():

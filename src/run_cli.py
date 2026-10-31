@@ -7,7 +7,8 @@ Run the agent in the terminal and answer its checkpoints yourself.
 Each pause prints what the agent wants, then you type an answer:
     confirm_role / choose_path : a role_id number
     ask_missing_info           : JSON, e.g. {"residency": "citizen"} or {"credit_balance": null}
-    approve_plan               : y or n
+    approve_plan               : y to approve, n to stop, or type what to change
+                                 (e.g. "cheaper", "skip Python", "a different job"; max 2 revisions)
 """
 import json
 import sys
@@ -72,6 +73,10 @@ def show(payload: dict) -> None:
               f"  = you pay ${c['out_of_pocket']:,.2f}   |  about {plan['total_hours']:,.0f} training hours")
         for n in c["notes"]:
             print("   *", n)
+        if plan.get("revision"):                  # Fix 9
+            print(f"   ~ revision {plan['revision']} of {plan.get('max_revisions', 2)}: {plan.get('revision_note', '')}")
+        if plan.get("skipped"):
+            print("   ~ skipped at your request:", ", ".join(plan["skipped"]))
         spend = plan.get("spend") or {}
         if spend.get("capped"):                   # Fix 3
             print(f"   ! AI budget (${spend['cap_usd']:.2f}) reached: some steps used the rule-based version")
@@ -84,7 +89,11 @@ def answer_for(payload: dict):
         return json.loads(raw)
     if cp in ("confirm_role", "choose_path"):
         return {"role_id": raw}
-    return {"approved": raw.lower().startswith("y"), "feedback": raw}
+    if raw.lower() in ("y", "yes"):
+        return {"approved": True, "feedback": ""}
+    if raw.lower() in ("n", "no", ""):
+        return {"approved": False, "feedback": ""}            # stop
+    return {"approved": False, "feedback": raw}                # Fix 9: revise on this feedback
 
 
 def main(path: str) -> None:
