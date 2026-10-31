@@ -1,0 +1,404 @@
+{
+ "_about": "E1 HELD-OUT personas (Fix 4, 30 Oct 2026). Written after the agent was built, in sectors the dev set (p01-p12) never used, and labelled by the same rules (py src/e1_auto_labels.py heldout) BEFORE the agent was ever run on them. Never used to change prompts, rules or thresholds. Report these separately from p01-p12: the gap between the two is how much the dev set flattered the agent.",
+ "_dropped": "Cook -> 'become an executive chef': the goal is in the framework, but every Executive Chef role is a jump of more than BIG_JUMP, so the labels say it must be shown AND must not be shown. No answer could pass, so the goal was changed to 'head chef' (h07). The labeller now refuses such cases.",
+ "_title_map": "h01 (registered nurse = Staff Nurse) and h06 (preschool teacher = Preschool Educator) need one TITLE_MAP line each, our assumption.",
+ "personas": [
+  {
+   "id": "h01",
+   "tags": [
+    "goal",
+    "hard_mapping",
+    "healthcare"
+   ],
+   "profile": {
+    "role": "Enrolled Nurse",
+    "age": 29,
+    "residency": "citizen",
+    "status": "employed",
+    "goal": "become a registered nurse"
+   },
+   "labels": {
+    "current_role_id": 1084,
+    "current_role_alternatives": [],
+    "acceptable_path_ids": [
+     1076,
+     1095,
+     1096
+    ],
+    "must_not_path_ids": [
+     1073,
+     1074,
+     1075,
+     1077,
+     1078,
+     1079,
+     1080,
+     1081,
+     1082,
+     1083
+    ],
+    "role_names": {
+     "1073": "Assistant Director of Nursing (Clinical)",
+     "1074": "Assistant Director of Nursing (Education)",
+     "1075": "Assistant Director of Nursing (Management)",
+     "1076": "Assistant Nurse Clinician",
+     "1077": "Chief Nurse",
+     "1078": "Deputy Director of Nursing (Clinical)",
+     "1079": "Deputy Director of Nursing (Education)",
+     "1080": "Deputy Director of Nursing (Management)",
+     "1081": "Director of Nursing (Clinical)",
+     "1082": "Director of Nursing (Education)",
+     "1083": "Director of Nursing (Management)",
+     "1084": "Enrolled Nurse",
+     "1095": "Senior Staff Nurse",
+     "1096": "Staff Nurse"
+    },
+    "goal_achievable": true,
+    "source": "auto-v1: framework seniority ladder (src/e1_auto_labels.py) (held-out)"
+   }
+  },
+  {
+   "id": "h02",
+   "tags": [
+    "no_goal",
+    "older_worker",
+    "transport"
+   ],
+   "profile": {
+    "role": "Bus Captain",
+    "age": 58,
+    "residency": "citizen",
+    "status": "employed"
+   },
+   "labels": {
+    "current_role_id": 1605,
+    "current_role_alternatives": [],
+    "acceptable_path_ids": [
+     1607,
+     1612
+    ],
+    "must_not_path_ids": [
+     1606,
+     1609,
+     1611
+    ],
+    "role_names": {
+     "1605": "Bus Captain",
+     "1606": "Bus Operations Control Centre Manager",
+     "1607": "Chief Bus Captain / Master Bus Captain",
+     "1609": "Depot Operations Manager / Depot Manager",
+     "1611": "Interchange Manager",
+     "1612": "Senior Bus Captain"
+    },
+    "goal_achievable": "n/a",
+    "source": "auto-v1: framework seniority ladder (src/e1_auto_labels.py) (held-out)"
+   }
+  },
+  {
+   "id": "h03",
+   "tags": [
+    "goal",
+    "no_answer",
+    "healthcare"
+   ],
+   "profile": {
+    "role": "Pharmacy Technician",
+    "age": 33,
+    "residency": "pr",
+    "status": "employed",
+    "goal": "become a pharmacist"
+   },
+   "labels": {
+    "current_role_id": 1115,
+    "current_role_alternatives": [],
+    "acceptable_path_ids": [
+     1117,
+     1119
+    ],
+    "must_not_path_ids": [],
+    "role_names": {
+     "1115": "Pharmacy Technician",
+     "1117": "Pharmacy Technician Executive (Patient Care Services)",
+     "1119": "Senior Pharmacy Technician"
+    },
+    "goal_achievable": false,
+    "source": "auto-v1: framework seniority ladder (src/e1_auto_labels.py) (held-out)"
+   }
+  },
+  {
+   "id": "h04",
+   "tags": [
+    "goal",
+    "step_up",
+    "logistics"
+   ],
+   "profile": {
+    "role": "Warehouse Assistant",
+    "age": 45,
+    "residency": "citizen",
+    "status": "retrenched",
+    "goal": "become a warehouse supervisor"
+   },
+   "labels": {
+    "current_role_id": 1432,
+    "current_role_alternatives": [],
+    "acceptable_path_ids": [
+     1436,
+     1437
+    ],
+    "must_not_path_ids": [
+     1389,
+     1430,
+     1431,
+     1434,
+     1435
+    ],
+    "role_names": {
+     "1389": "Chief Executive Officer / Chief Operating Officer / Managing Director / General Manager",
+     "1430": "Health, Safety and Environmental Manager",
+     "1431": "Health, Safety and Environmental Officer",
+     "1432": "Material Handling Equipment (MHE) Operator / Forklift Operator / Warehouse Assistant / Inventory Assistant",
+     "1434": "Warehouse Operations Executive / Inventory Management Executive / Warehouse Assistant Manager",
+     "1435": "Warehouse Operations Manager / Inventory Management Manager / Capacity Management Manager",
+     "1436": "Warehouse Storekeeper / Inventory Coordinator / Logistics Coordinator",
+     "1437": "Warehouse Supervisor / Inventory Control Supervisor / Quality Control Supervisor"
+    },
+    "goal_achievable": true,
+    "source": "auto-v1: framework seniority ladder (src/e1_auto_labels.py) (held-out)"
+   }
+  },
+  {
+   "id": "h05",
+   "tags": [
+    "goal",
+    "ambiguous_sector",
+    "sales"
+   ],
+   "profile": {
+    "role": "Sales Executive",
+    "age": 36,
+    "residency": "citizen",
+    "status": "employed",
+    "goal": "move into business development"
+   },
+   "labels": {
+    "current_role_id": 1305,
+    "current_role_alternatives": [
+     1183,
+     1533,
+     1902,
+     2018
+    ],
+    "acceptable_path_ids": [
+     941,
+     942,
+     1177,
+     1184,
+     1293,
+     1303,
+     1408,
+     1522,
+     1534,
+     1897,
+     1901,
+     1903,
+     2016,
+     2019
+    ],
+    "must_not_path_ids": [
+     961,
+     962,
+     1161,
+     1178,
+     1297,
+     1523,
+     1738
+    ],
+    "role_names": {
+     "941": "Business Development Manager / Distribution Manager / Channel Manager / Partnerships and Affinity Management Manager",
+     "942": "Business Development Manager / Distribution Manager / Channel Manager / Partnerships and Affinity Management Manager (Insurance)",
+     "961": "Head of Business Development / Head of Distribution / Head of Channel / Head of Partnerships and Affinity Management",
+     "962": "Head of Business Development / Head of Distribution / Head of Channel / Head of Partnerships and Affinity Management (Insurance)",
+     "1161": "General Manager",
+     "1177": "Director of Sales / Director of Catering / Assistant Director of Sales / Assistant Director of Catering",
+     "1178": "Director of Sales and Marketing",
+     "1183": "Sales Executive / Catering Sales Executive",
+     "1184": "Sales Manager / Catering Sales Manager / Assistant Sales Manager / Assistant Catering Sales Manager",
+     "1293": "Business Development Manager",
+     "1297": "Head of Sales",
+     "1303": "Sales Account Manager",
+     "1305": "Sales Executive",
+     "1408": "Business Development Manager / Sales and Marketing Manager / Vertical Sales Account Manager / Key Account Manager / Project Cargo Sales Manager / Route Development Manager / Trade Lane Manager",
+     "1522": "Head of Marketing / Marketing Director",
+     "1523": "Head of Sales / Sales Director",
+     "1533": "Sales Executive",
+     "1534": "Sales Manager",
+     "1738": "Port Business Development / Operations Manager",
+     "1897": "Business Development Manager",
+     "1901": "Sales Director",
+     "1902": "Sales Executive / Travel Consultant (Sales)",
+     "1903": "Sales Manager",
+     "2016": "Head of Sales",
+     "2018": "Sales Executive",
+     "2019": "Sales Manager"
+    },
+    "goal_achievable": true,
+    "source": "auto-v1: framework seniority ladder (src/e1_auto_labels.py) (held-out)"
+   }
+  },
+  {
+   "id": "h06",
+   "tags": [
+    "goal",
+    "hard_mapping",
+    "early_childhood"
+   ],
+   "profile": {
+    "role": "Preschool Teacher",
+    "age": 31,
+    "residency": "citizen",
+    "status": "employed",
+    "goal": "become a centre leader"
+   },
+   "labels": {
+    "current_role_id": 418,
+    "current_role_alternatives": [],
+    "acceptable_path_ids": [
+     411,
+     420,
+     421
+    ],
+    "must_not_path_ids": [
+     412,
+     419
+    ],
+    "role_names": {
+     "411": "Centre Leader",
+     "412": "Curriculum / Pedagogy Specialist",
+     "418": "Preschool Educator",
+     "419": "Senior Centre Leader",
+     "420": "Senior Early Years Educators",
+     "421": "Senior Infant Educator"
+    },
+    "goal_achievable": true,
+    "source": "auto-v1: framework seniority ladder (src/e1_auto_labels.py) (held-out)"
+   }
+  },
+  {
+   "id": "h07",
+   "tags": [
+    "goal",
+    "step_up",
+    "mid_career"
+   ],
+   "profile": {
+    "role": "Cook",
+    "age": 52,
+    "residency": "citizen",
+    "status": "retrenched",
+    "goal": "become a head chef"
+   },
+   "labels": {
+    "current_role_id": 1051,
+    "current_role_alternatives": [],
+    "acceptable_path_ids": [
+     1050,
+     1054,
+     1055
+    ],
+    "must_not_path_ids": [
+     1052,
+     1053
+    ],
+    "role_names": {
+     "1050": "Assistant Head Chef",
+     "1051": "Cook / Kitchen Assistant",
+     "1052": "Executive Chef",
+     "1053": "Executive Sous Chef",
+     "1054": "Head Chef",
+     "1055": "Senior Cook / Station Chef"
+    },
+    "goal_achievable": true,
+    "source": "auto-v1: framework seniority ladder (src/e1_auto_labels.py) (held-out)"
+   }
+  },
+  {
+   "id": "h08",
+   "tags": [
+    "goal",
+    "ambiguous_sector",
+    "pr"
+   ],
+   "profile": {
+    "role": "Quality Assurance Engineer",
+    "age": 40,
+    "residency": "pr",
+    "status": "employed",
+    "goal": "become a quality manager"
+   },
+   "labels": {
+    "current_role_id": 338,
+    "current_role_alternatives": [
+     1282,
+     1336
+    ],
+    "acceptable_path_ids": [
+     335,
+     338,
+     341,
+     1283,
+     1285,
+     1337,
+     1338,
+     1454,
+     1973
+    ],
+    "must_not_path_ids": [
+     315,
+     321,
+     1263,
+     1264,
+     1267,
+     1270,
+     1271,
+     1324,
+     1325,
+     1326,
+     1327,
+     1328,
+     1333,
+     1343
+    ],
+    "role_names": {
+     "315": "Quality Assurance Manager",
+     "321": "Quality Control Manager",
+     "335": "Factory Manager",
+     "338": "Quality Assurance Manager / Quality Control Manager / Quality Assurance Engineer / Quality Control Engineer / Planner",
+     "341": "Senior Quality Assurance Manager / Senior Quality Control Manager / Senior Planner",
+     "1263": "Chief Product Officer",
+     "1264": "Chief Technology Officer",
+     "1267": "Head of Product",
+     "1270": "Head of Quality & Risk",
+     "1271": "Head of Software Engineering",
+     "1282": "Quality Assurance Engineer",
+     "1283": "Quality Assurance Manager",
+     "1285": "Quality Engineering Manager",
+     "1324": "Enterprise Architect",
+     "1325": "Group Data Protection Officer",
+     "1326": "Head of IT Audit",
+     "1327": "Head of Product",
+     "1328": "Head of Quality",
+     "1333": "Program Director",
+     "1336": "Quality Assurance Engineer",
+     "1337": "Quality Assurance Manager",
+     "1338": "Quality Engineer",
+     "1343": "Chief Technology Officer",
+     "1454": "Quality Assurance / Quality Control Manager",
+     "1973": "Learning Quality Manager"
+    },
+    "goal_achievable": true,
+    "source": "auto-v1: framework seniority ladder (src/e1_auto_labels.py) (held-out)"
+   }
+  }
+ ]
+}

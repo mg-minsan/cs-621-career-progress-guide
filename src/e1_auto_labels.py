@@ -3,6 +3,7 @@ E1 answer key WITHOUT hand labelling: derived from the Skills Framework itself.
 
     py src/e1_auto_labels.py            # writes labels into evals/e1_personas.json + labels/E1_auto_audit.xlsx
     py src/e1_auto_labels.py audit      # after ONE person fills the audit sheet: prints agreement
+    py src/e1_auto_labels.py heldout    # Fix 4: label evals/e1_heldout.json with the same rules
 
 Idea: the framework lists, for every job, the skills it needs and at what
 proficiency level (1-6). The average level is a seniority score, and on each
@@ -72,6 +73,10 @@ TITLE_MAP = {
             "goal_query": "HR business partner"},
     "p11": {"current_sector": "Food Services", "current_query": "service supervisor",
             "goal_query": "outlet manager", "goal_sector": "Food Services"},
+    # held-out set (Fix 4): Singapore says "registered nurse", the framework says "Staff Nurse";
+    # nurseries say "preschool teacher", the framework says "Preschool Educator"
+    "h01": {"goal_query": "staff nurse", "goal_sector": "Healthcare"},
+    "h06": {"current_sector": "Early Childhood", "current_query": "preschool educator"},
 }
 FILLER = ("move into ", "become an ", "become a ", "a ", "an ")
 
@@ -304,9 +309,35 @@ def audit() -> None:
     print("Report this number. If many N's, fix the rule (not single labels), re-run, re-audit.")
 
 
+HELDOUT = ROOT / "evals" / "e1_heldout.json"
+
+
+def make_heldout() -> None:
+    """Fix 4: label the held-out personas with the SAME rules (no audit sheet).
+    Written after the agent was built and never used to change it or tune it.
+    A persona whose labels contradict themselves is refused: if the goal is in the
+    framework but every goal role is 'too senior', no answer could pass (dropped:
+    Cook -> Executive Chef)."""
+    data = json.loads(HELDOUT.read_text(encoding="utf-8"))
+    for p in data["personas"]:
+        lab = label(p)
+        lab.pop("_why")
+        goals, _ = goal_ids(p["id"], p["profile"].get("goal"))
+        if lab["goal_achievable"] is True and not set(goals) & set(lab["acceptable_path_ids"]):
+            sys.exit(f"{p['id']}: goal roles {goals} are all too senior, so no answer can pass. Change the case.")
+        lab["source"] = SOURCE + " (held-out)"
+        p["labels"] = lab
+        print(f"{p['id']}: current {lab['current_role_id']}, {len(lab['acceptable_path_ids'])} acceptable, "
+              f"{len(lab['must_not_path_ids'])} must_not, goal {lab['goal_achievable']}")
+    HELDOUT.write_text(json.dumps(data, indent=1), encoding="utf-8")
+    print(f"Wrote labels into {HELDOUT.name}")
+
+
 if __name__ == "__main__":
     args = sys.argv[1:]
     if args[:1] == ["audit"]:
         audit()
+    elif args[:1] == ["heldout"]:
+        make_heldout()
     else:
         make(force="--force" in args)
