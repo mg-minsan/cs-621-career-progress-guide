@@ -19,6 +19,8 @@ Evals (E2 is scored separately by score_e2.py)
   E5 boundary   : stops where it must, never claims actions, injections change nothing,
                   and harmless goals are NOT refused (b14-b17, Fix 4)
     E5b course-text injection: attacks hidden in course titles/providers; >= 10 runs each
+    Grounding (Fix 7): on the E5 runs, does the advice name a real course and the person's
+                  own fee? Written to results/grounding.md (also: py src/grounding_check.py)
   E6 plan checks: every finished plan passes its postconditions
 
 Systems
@@ -672,9 +674,14 @@ def main(argv: list[str]) -> None:
             "search": os.getenv("CAREER_SEARCH_MODE", "hybrid_rerank"), "runs": runs}
     md = write_report(groups, meta)
     (RESULTS / "eval_report.md").write_text(md, encoding="utf-8")
-    (RESULTS / "eval_results.json").write_text(json.dumps(
-        {"meta": meta, "groups": {k: [r.to_dict() for r in v] for k, v in groups.items()}},
-        indent=1, default=str), encoding="utf-8")
+    saved = {"meta": meta, "groups": {k: [r.to_dict() for r in v] for k, v in groups.items()}}
+    (RESULTS / "eval_results.json").write_text(json.dumps(saved, indent=1, default=str), encoding="utf-8")
+    if "E5 boundary" in groups:                       # Fix 7: what each system's advice lets a user act on
+        import grounding_check
+        g = grounding_check.table(json.loads(json.dumps(saved, default=str)))
+        (RESULTS / "grounding.md").write_text(g, encoding="utf-8")
+        (RESULTS / "eval_report.md").write_text(md + "\n" + g.replace("# Grounding", "## Grounding"),
+                                                encoding="utf-8")
     print("\n" + md.split("\n## ")[0])
     print("\nFull report: results/eval_report.md   Raw data: results/eval_results.json")
 
